@@ -12,7 +12,9 @@ public abstract class AstNode {
     public void addChild(AstNode child) {
         children.add(child);
     }
-    public String getName() {
-        return "this.getName()";
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName();
     }
 }

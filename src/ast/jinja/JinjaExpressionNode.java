@@ -10,4 +10,10 @@ public class JinjaExpressionNode extends AstNode {
     public String getExpression() {
         return expression;
     }
+
+    @Override
+    public String toString() {
+        return "JinjaExpressionNode: " + expression;
+    }
+
 }

@@ -6,64 +6,70 @@ import ast.css.*;
 import ast.jinja.*;
 
 public class Main {
-
     public static void main(String[] args) {
 
-        // HTML
-        HtmlTextNode textNode = new HtmlTextNode("Hello, world!");
-        HtmlAttributeNode classAttr = new HtmlAttributeNode("class", "title");
-        HtmlTagNode divNode = new HtmlTagNode("div");
-        divNode.addAttribute(classAttr);
-        divNode.addChild(textNode);
-
         HtmlDocumentNode htmlDoc = new HtmlDocumentNode();
-        htmlDoc.addChild(divNode);
 
-        // CSS
-        CssDeclarationNode decl1 = new CssDeclarationNode("color", "red", false);
-        CssDeclarationNode decl2 = new CssDeclarationNode("font-size", "16px", true);
+        //HTML
+        HtmlTagNode htmlTag = new HtmlTagNode("html");
+        HtmlTagNode headTag = new HtmlTagNode("head");
+        HtmlTagNode bodyTag = new HtmlTagNode("body");
 
-        CssSelectorNode selector = new CssSelectorNode(".title");
-        selector.addChild(decl1);
-        selector.addChild(decl2);
+        HtmlTextNode titleText = new HtmlTextNode("Test");
+        HtmlTagNode titleTag = new HtmlTagNode("title");
+        titleTag.addChild(titleText);
 
-        CssRuleNode cssRule = new CssRuleNode();
-        cssRule.addChild(selector);
+        headTag.addChild(titleTag);
 
-        AstNode cssDoc = new AstNode() {
-            @Override
-            public String getName() { return "CssDocument"; }
-        };
-        cssDoc.addChild(cssRule);
+        HtmlAttributeNode bodyAttr = new HtmlAttributeNode("style", "margin:0; padding:20px;");
+        bodyTag.addAttribute(bodyAttr);
 
-        JinjaVarNode jinjaVar = new JinjaVarNode("user_name");
+        HtmlTextNode bodyText = new HtmlTextNode("This is an html text");
+        HtmlTagNode divTag = new HtmlTagNode("div");
+        divTag.addChild(bodyText);
+        bodyTag.addChild(divTag);
 
-        String jinjaBody = "Welcome, {{ user_name}}! }}";
+        htmlTag.addChild(headTag);
+        htmlTag.addChild(bodyTag);
+        htmlDoc.addChild(htmlTag);
 
-        JinjaIfNode jinjaIf = new JinjaIfNode("user_logged_in", jinjaBody);
+        System.out.println("HTML");
+        printAst(htmlDoc, 0);
 
-        AstNode jinjaDoc = new AstNode() {
-            @Override
-            public String getName() { return "JinjaDocument"; }
-        };
-        jinjaDoc.addChild(jinjaIf);
+        //CSS
+        CssDocumentNode cssDoc = new CssDocumentNode();
 
-        AstNode root = new AstNode() {
-            @Override
-            public String getName() { return "Root"; }
-        };
-        root.addChild(htmlDoc);
-        root.addChild(cssDoc);
-        root.addChild(jinjaDoc);
+        CssSelectorNode selector = new CssSelectorNode(".box");
+        selector.addDeclaration(new CssDeclarationNode("width", "100px", true));
+        selector.addDeclaration(new CssDeclarationNode("height", "200px", false));
+        selector.addDeclaration(new CssDeclarationNode("background", "#ff0000", true));
 
-        printAst(root, 0);
+        cssDoc.addChild(selector);
+
+        System.out.println("\nCSS");
+        printAst(cssDoc, 0);
+
+        //Jinja
+        JinjaDocumentNode jinjaDoc = new JinjaDocumentNode();
+
+        JinjaIfNode ifNode = new JinjaIfNode("user.is_admin", "Show admin panel");
+        JinjaForNode forNode = new JinjaForNode("item", "items", "Render item");
+
+        JinjaVarNode varNode = new JinjaVarNode("username");
+        JinjaExpressionNode exprNode = new JinjaExpressionNode("user.age + 1");
+
+        jinjaDoc.addChild(ifNode);
+        jinjaDoc.addChild(forNode);
+        jinjaDoc.addChild(varNode);
+        jinjaDoc.addChild(exprNode);
+
+        System.out.println("\nJinja");
+        printAst(jinjaDoc, 0);
     }
 
-    private static void printAst(AstNode node, int indent) {
-        String prefix = " ".repeat(indent * 2);
-
-        String info = node.toString();
-        System.out.println(prefix + node.getClass().getSimpleName());
+    public static void printAst(AstNode node, int indent) {
+        String prefix = "  ".repeat(indent);
+        System.out.println(prefix + node);
 
         for (AstNode child : node.getChildren()) {
             printAst(child, indent + 1);

@@ -21,4 +21,9 @@ public class CssDeclarationNode extends AstNode {
     public boolean isImportant() {
         return important;
     }
+
+    @Override
+    public String toString() {
+        return "CssDeclarationNode: " + property + " = " + value;
+    }
 }

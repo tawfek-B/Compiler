@@ -10,4 +10,9 @@ public class JinjaRawHtmlNode extends AstNode {
     public String getHtml() {
         return html;
     }
+
+    @Override
+    public String toString() {
+        return "JinjaRawHtmlNode: " + html;
+    }
 }

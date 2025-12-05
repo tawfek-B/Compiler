@@ -1,10 +1,11 @@
-package ast.jinja;
+package ast.css;
 
 import ast.core.AstNode;
 
-public class JinjaVarNode extends AstNode {
+public class CssAtRuleNode extends AstNode {
     private String name;
-    public JinjaVarNode(String name) {
+
+    public CssAtRuleNode(String name) {
         this.name = name;
     }
     public String getName() {
@@ -13,7 +14,7 @@ public class JinjaVarNode extends AstNode {
 
     @Override
     public String toString() {
-        return "JinjaVarNode: " + name;
+        return "CssAtRuleNode: " + name;
     }
 
 }
