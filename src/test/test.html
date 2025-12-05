@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--[if IE]>
+    <p>This is an HTML conditional comment</p>
+    <![endif]-->
+    <title>Test HTML + Full CSS Grammar</title>
+
+    <!-- Regular comment -->
+    <![CDATA[ This is CDATA ]]>
+
+    <%-- JSP scriptlet --%>
+    <% out.println("Hello from scriptlet"); %>
+
+    <style>
+        /* Full CSS grammar test inside <style> */
+
+        @charset "utf-8";
+
+        @import url("theme.css") screen and (min-width: 600px);
+        @import "mobile.css";
+
+        @font-face {
+            font-family: "MyFont";
+            src: url("myfont.woff2") format("woff2");
+        }
+
+        @keyframes slidein {
+            from { transform: translateX(-100%); }
+            50%  { opacity: 0.5; }
+            to   { transform: translateX(0); }
+        }
+
+        @media print and (color) {
+            body { background: white !important; }
+        }
+
+        @page :first {
+            margin: 2in;
+            @top-center { content: "Confidential"; }
+            @bottom-right-corner { content: counter(page); }
+        }
+
+        /* Selectors */
+        div > p.highlight + span::before { content: "→ "; }
+        [data-role~="admin"] { color: red; }
+        input[type^="text"] { border: 1px solid; }
+        a[href$=".pdf"]::after { content: "(PDF)"; }
+        li:nth-child(2n+1) { background: #f0f0f0; }
+        .button:active { transform: scale(0.95); }
+
+        /* Values */
+        .box {
+            width: calc(100% - 20px);
+            margin: 0 auto;
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            border-radius: 50% / 20%;
+            font: 16px/1.5 "Helvetica", sans-serif;
+            animation: slidein 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            unicode-range: U+26, U+2600-26FF;
+            color: #123456 !important;
+        }
+    </style>
+</head>
+<body style="margin:0; padding:20px; font-family: Arial, sans-serif;">
+
+<h1 class="title" style="color: #3498db; text-align: center;">HTML + CSS Grammar Test</h1>
+
+<div class="box" style="width:300px; height:200px; background: #e74c3c; animation: slidein 2s infinite;">
+    This div uses inline style and CSS animation
+</div>
+
+<script>
+    console.log("Script block works too");
+</script>
+
+<%-- Another scriptlet --%>
+<% if (true) { %>
+<p>Scriptlet inside body</p>
+<% } %>
+
+</body>
+</html>
