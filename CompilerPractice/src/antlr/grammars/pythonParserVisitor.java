@@ -94,6 +94,13 @@ public interface pythonParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParameterListDeclaration(pythonParser.ParameterListDeclarationContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code blockStatement}
+	 * labeled alternative in {@link pythonParser#block}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBlockStatement(pythonParser.BlockStatementContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code assign}
 	 * labeled alternative in {@link pythonParser#assignment}.
 	 * @param ctx the parse tree
@@ -142,12 +149,6 @@ public interface pythonParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitForEachLoop(pythonParser.ForEachLoopContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link pythonParser#block}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitBlock(pythonParser.BlockContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code compareExpression}
 	 * labeled alternative in {@link pythonParser#expr}.

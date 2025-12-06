@@ -1,5 +1,7 @@
 package ast.core;
 
+import ast.ASTVisitor;
+
 public class UnaryNode extends ASTNode {
     public final String operator; // "-", "not"
     public ASTNode expression;
@@ -9,5 +11,10 @@ public class UnaryNode extends ASTNode {
         this.operator = operator;
         this.expression = expression;
         add(expression);
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

@@ -161,6 +161,18 @@ public class pythonParserBaseListener implements pythonParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterBlockStatement(pythonParser.BlockStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBlockStatement(pythonParser.BlockStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterAssign(pythonParser.AssignContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -240,18 +252,6 @@ public class pythonParserBaseListener implements pythonParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitForEachLoop(pythonParser.ForEachLoopContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterBlock(pythonParser.BlockContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitBlock(pythonParser.BlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

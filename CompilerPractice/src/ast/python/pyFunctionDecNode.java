@@ -1,5 +1,6 @@
 package ast.python;
 
+import ast.ASTVisitor;
 import ast.core.ASTNode;
 
 import java.util.List;
@@ -16,5 +17,10 @@ public class pyFunctionDecNode extends ASTNode {
 
     public void setBody(ASTNode body){
         add(body);
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

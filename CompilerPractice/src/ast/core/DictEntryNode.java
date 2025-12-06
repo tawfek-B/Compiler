@@ -1,5 +1,7 @@
 package ast.core;
 
+import ast.ASTVisitor;
+
 public class DictEntryNode extends ASTNode{
 
     public final String key;
@@ -10,5 +12,10 @@ public class DictEntryNode extends ASTNode{
         this.key = key;
         this.value = value;
         add(value);
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

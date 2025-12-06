@@ -150,6 +150,18 @@ public interface pythonParserListener extends ParseTreeListener {
 	 */
 	void exitParameterListDeclaration(pythonParser.ParameterListDeclarationContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code blockStatement}
+	 * labeled alternative in {@link pythonParser#block}.
+	 * @param ctx the parse tree
+	 */
+	void enterBlockStatement(pythonParser.BlockStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code blockStatement}
+	 * labeled alternative in {@link pythonParser#block}.
+	 * @param ctx the parse tree
+	 */
+	void exitBlockStatement(pythonParser.BlockStatementContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code assign}
 	 * labeled alternative in {@link pythonParser#assignment}.
 	 * @param ctx the parse tree
@@ -233,16 +245,6 @@ public interface pythonParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitForEachLoop(pythonParser.ForEachLoopContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link pythonParser#block}.
-	 * @param ctx the parse tree
-	 */
-	void enterBlock(pythonParser.BlockContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link pythonParser#block}.
-	 * @param ctx the parse tree
-	 */
-	void exitBlock(pythonParser.BlockContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code compareExpression}
 	 * labeled alternative in {@link pythonParser#expr}.

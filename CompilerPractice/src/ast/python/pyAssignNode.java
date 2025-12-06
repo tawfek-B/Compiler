@@ -1,5 +1,6 @@
 package ast.python;
 
+import ast.ASTVisitor;
 import ast.core.ASTNode;
 
 public class pyAssignNode extends ASTNode {
@@ -8,5 +9,10 @@ public class pyAssignNode extends ASTNode {
     public pyAssignNode(String name, int line) {
         super("Assignment(" + name + ")", line);
         this.name = name;
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

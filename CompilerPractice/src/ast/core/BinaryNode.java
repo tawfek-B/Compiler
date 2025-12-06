@@ -1,5 +1,7 @@
 package ast.core;
 
+import ast.ASTVisitor;
+
 public class BinaryNode extends ASTNode {
     public final String operator; // "+", "-", "*", "/", "<", "==", "and", etc.
     public ASTNode left;
@@ -12,5 +14,9 @@ public class BinaryNode extends ASTNode {
         this.right = right;
         add(left);
         add(right);
+    }
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

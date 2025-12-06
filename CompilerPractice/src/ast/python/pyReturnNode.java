@@ -1,5 +1,6 @@
 package ast.python;
 
+import ast.ASTVisitor;
 import ast.core.ASTNode;
 
 public class pyReturnNode extends ASTNode {
@@ -13,5 +14,10 @@ public class pyReturnNode extends ASTNode {
         this.value = value;
         if(value != null)
             add(value);
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

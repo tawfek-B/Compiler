@@ -1,5 +1,7 @@
 package ast.core;
 
+import ast.ASTVisitor;
+
 public class NumberNode extends ASTNode{
 
     public final double value;
@@ -8,5 +10,10 @@ public class NumberNode extends ASTNode{
         super("number(" + value + ")",line);
         this.value = value;
 
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

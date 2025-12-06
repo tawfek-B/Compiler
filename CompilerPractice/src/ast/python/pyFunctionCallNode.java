@@ -1,5 +1,6 @@
 package ast.python;
 
+import ast.ASTVisitor;
 import ast.core.ASTNode;
 
 import java.util.ArrayList;
@@ -18,5 +19,10 @@ public class pyFunctionCallNode extends ASTNode {
         arguments.add(argument);
         add(argument);
 
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

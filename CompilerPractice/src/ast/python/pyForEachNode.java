@@ -1,5 +1,6 @@
 package ast.python;
 
+import ast.ASTVisitor;
 import ast.core.ASTNode;
 
 public class pyForEachNode extends ASTNode {
@@ -11,5 +12,10 @@ public class pyForEachNode extends ASTNode {
         this.var = var;
         this.iterable = iterable;
 
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

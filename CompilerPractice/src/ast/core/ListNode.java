@@ -1,5 +1,7 @@
 package ast.core;
 
+import ast.ASTVisitor;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +17,11 @@ public class ListNode extends ASTNode{
     public void addElements(ASTNode element){
         elements.add(element);
         add(element);
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 

@@ -1,5 +1,7 @@
 package ast.core;
 
+import ast.ASTVisitor;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,15 +16,28 @@ public abstract class ASTNode {
         this.line = line;
     }
 
+    public abstract <T> T accept(ASTVisitor<T> visitor);
+
     public void add(ASTNode child){
         if(child != null)
             children.add(child);
-
     }
+
 
     public void print(String indent){
         System.out.println(indent + type + "line(" + line + ")");
         for(ASTNode c : children)
             c.print(indent + " ");
+    }
+
+    public List<ASTNode> getChildren() {
+        return children;
+    }
+    public void addChild(ASTNode child) {
+        if(child != null)
+            children.add(child);
+    }
+    public String getName() {
+        return this.getClass().getSimpleName();
     }
 }
