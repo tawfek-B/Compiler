@@ -1,13 +1,22 @@
 package ast.css;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 
-public class CssMarginRuleNode extends AstNode {
+import java.util.ArrayList;
+import java.util.List;
+
+public class CssMarginRuleNode extends ASTNode {
     private String area;
+//    private List<CssDeclarationNode> declarations = new ArrayList<>();
 
-    public CssMarginRuleNode(String area) {
+    public CssMarginRuleNode(String area, int line) {
+        super("CSS Margin Rule Node", line);
         this.area = area;
     }
+    
+//    public void addDeclaration(CssDeclarationNode declaration) {
+//        declarations.add(declaration);
+//    }
 
     public String getArea() {
         return area;

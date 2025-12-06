@@ -1,14 +1,15 @@
 package ast.css;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CssSelectorNode extends AstNode {
+public class CssSelectorNode extends ASTNode {
     private String selector;
     private List<CssDeclarationNode> declarations = new ArrayList<>();
-    public CssSelectorNode(String selector) {
+    public CssSelectorNode(String selector, int line) {
+        super("Css Selector Node", line);
         this.selector = selector;
     }
     public void addDeclaration(CssDeclarationNode decl) {
@@ -27,7 +28,7 @@ public class CssSelectorNode extends AstNode {
     }
 
     @Override
-    public List<AstNode> getChildren() {
+    public List<ASTNode> getChildren() {
         return new ArrayList<>(declarations);
     }
 }

@@ -1,13 +1,14 @@
 package ast.jinja;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 
-public class JinjaForNode extends AstNode {
+public class JinjaForNode extends ASTNode {
     private String variable;
     private String iterable;
     private String body;
 
-    public JinjaForNode(String variable, String iterable, String body) {
+    public JinjaForNode(String variable, String iterable, String body, int line) {
+        super("Jinja for loop", line);
         this.variable = variable;
         this.iterable = iterable;
         this.body = body;

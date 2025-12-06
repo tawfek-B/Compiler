@@ -1,10 +1,11 @@
 package ast.jinja;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 
-public class JinjaCommentNode extends AstNode {
+public class JinjaCommentNode extends ASTNode {
     private String comment;
-    public JinjaCommentNode(String comment) {
+    public JinjaCommentNode(String comment,  int line) {
+        super("Css Comment Node", line);
         this.comment = comment;
     }
     public String getComment() {

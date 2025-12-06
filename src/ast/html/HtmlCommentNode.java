@@ -1,11 +1,12 @@
 package ast.html;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 
-public class HtmlCommentNode extends AstNode {
+public class HtmlCommentNode extends ASTNode {
     private String comment;
 
-    public HtmlCommentNode(String comment) {
+    public HtmlCommentNode(String comment,  int line) {
+        super("Css Comment Node", line);
         this.comment = comment;
     }
 

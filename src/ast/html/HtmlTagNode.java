@@ -1,15 +1,16 @@
 package ast.html;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HtmlTagNode extends AstNode {
+public class HtmlTagNode extends ASTNode {
 
     private String tagName;
     private List<HtmlAttributeNode> attributes = new ArrayList<>();
 
-    public HtmlTagNode(String tagName) {
+    public HtmlTagNode(String tagName,  int line) {
+        super("Html Tag Node", line);
         this.tagName = tagName;
     }
     public String getTagName() {
@@ -28,9 +29,9 @@ public class HtmlTagNode extends AstNode {
     }
 
     @Override
-    public List<AstNode> getChildren()
+    public List<ASTNode> getChildren()
     {
-        List<AstNode> all = new ArrayList<>();
+        List<ASTNode> all = new ArrayList<>();
         all.addAll(attributes);
         all.addAll(children);
 

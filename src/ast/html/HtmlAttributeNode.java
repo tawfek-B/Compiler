@@ -1,12 +1,13 @@
 package ast.html;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 
-public class HtmlAttributeNode extends AstNode {
+public class HtmlAttributeNode extends ASTNode {
     private String name;
     private String value;
 
-    public HtmlAttributeNode(String name, String value) {
+    public HtmlAttributeNode(String name, String value,  int line) {
+        super("Css Attribute Node", line);
         this.name = name;
         this.value = value;
     }

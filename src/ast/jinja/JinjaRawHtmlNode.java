@@ -1,10 +1,11 @@
 package ast.jinja;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 
-public class JinjaRawHtmlNode extends AstNode {
+public class JinjaRawHtmlNode extends ASTNode {
     private String html;
-    public JinjaRawHtmlNode(String html) {
+    public JinjaRawHtmlNode(String html,  int line) {
+        super("Css Raw Node", line);
         this.html = html;
     }
     public String getHtml() {

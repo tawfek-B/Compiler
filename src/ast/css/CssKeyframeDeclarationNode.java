@@ -2,15 +2,19 @@ package ast.css;
 
 import ast.core.ASTNode;
 
-public class CssDeclarationNode extends ASTNode {
+import java.util.ArrayList;
+import java.util.List;
+
+public class CssKeyframeDeclarationNode extends ASTNode {
     private String property;
     private String value;
     private boolean important;
 
-    public CssDeclarationNode(String property, String value,  boolean important, int line) {
-        super("Css Declaration Node", line);
-        this.property = property;
+
+    public CssKeyframeDeclarationNode(String property, String value, boolean important, int line) {
+        super("CSS Keyframe Declaration", line);
         this.value = value;
+        this.property = property;
         this.important = important;
     }
     public String getProperty() {
@@ -19,12 +23,9 @@ public class CssDeclarationNode extends ASTNode {
     public String getValue() {
         return value;
     }
-    public boolean isImportant() {
-        return important;
-    }
 
     @Override
     public String toString() {
-        return "CssDeclarationNode: " + property + " = " + value;
+        return "CSS Keyframe Declaration: " + property + " = " + value;
     }
 }

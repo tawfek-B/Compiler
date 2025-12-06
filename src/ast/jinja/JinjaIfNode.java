@@ -1,11 +1,12 @@
 package ast.jinja;
 
-import ast.core.AstNode;
+import ast.core.ASTNode;
 
-public class JinjaIfNode extends AstNode {
+public class JinjaIfNode extends ASTNode {
     private String condition;
     private String body;
-    public JinjaIfNode(String condition, String body) {
+    public JinjaIfNode(String condition, String body,  int line) {
+        super("Css If Node", line);
         this.condition = condition;
         this.body = body;
     }
@@ -18,6 +19,6 @@ public class JinjaIfNode extends AstNode {
 
     @Override
     public String toString() {
-        return "JinjaIfNode: " + condition + " -> " + body;
+        return "JinjaIfNode: if " + condition + " then " + body;
     }
 }
