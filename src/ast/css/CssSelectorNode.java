@@ -1,11 +1,12 @@
 package ast.css;
 
 import ast.core.ASTNode;
+import visitors.CssVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CssSelectorNode extends ASTNode {
+public class CssSelectorNode extends CssNode {
     private String selector;
     private List<CssDeclarationNode> declarations = new ArrayList<>();
     public CssSelectorNode(String selector, int line) {
@@ -22,13 +23,20 @@ public class CssSelectorNode extends ASTNode {
         return declarations;
     }
 
+    public List<ASTNode> getChildren() {
+        List<ASTNode> children = new ArrayList<>();
+        for (CssDeclarationNode declaration : declarations) {
+            children.add(declaration);
+        }
+        return children;
+    }
+
     @Override
     public String toString(){
         return "CssSelectorNode: " + selector;
     }
 
-    @Override
-    public List<ASTNode> getChildren() {
-        return new ArrayList<>(declarations);
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

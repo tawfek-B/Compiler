@@ -1,8 +1,9 @@
 package ast.jinja;
 
 import ast.core.ASTNode;
+import visitors.JinjaVisitor;
 
-public class JinjaForNode extends ASTNode {
+public class JinjaForNode extends JinjaNode {
     private String variable;
     private String iterable;
     private String body;
@@ -26,5 +27,9 @@ public class JinjaForNode extends ASTNode {
     @Override
     public String toString(){
         return "JinjaForNode: for " + variable + " in " + iterable + " -> " + body;
+    }
+
+    public <T> T accept(JinjaVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

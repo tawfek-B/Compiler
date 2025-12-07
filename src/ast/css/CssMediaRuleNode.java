@@ -1,14 +1,14 @@
 package ast.css;
 
 import ast.core.ASTNode;
-import org.antlr.v4.runtime.tree.RuleNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import visitors.CssVisitor;
 
-public class CssMediaRuleNode extends ASTNode {
+public class CssMediaRuleNode extends CssNode {
     private List<CssMediaQueryNode> queries = new ArrayList<>();
-    private List<ASTNode> rules = new ArrayList<>();
+    private List<CssNode> rules = new ArrayList<>();
 
     public CssMediaRuleNode(int line) {
         super("CSS Media Rule Node", line);
@@ -17,12 +17,11 @@ public class CssMediaRuleNode extends ASTNode {
     public void addQuery(CssMediaQueryNode query) {
         queries.add(query);
     }
-    public void addRule(ASTNode rule) {
+    public void addRule(CssNode rule) {
         rules.add(rule);
     }
 
-    @Override
-    public List<ASTNode>  getChildren()
+    public List<ASTNode> getChildren()
     {
         List<ASTNode> children = new ArrayList<>();
         children.addAll(rules);
@@ -34,4 +33,10 @@ public class CssMediaRuleNode extends ASTNode {
     public String toString() {
         return "CSS Media Rule Node";
     }
+
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+
 }

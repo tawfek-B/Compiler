@@ -4,8 +4,9 @@ import ast.core.ASTNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import visitors.CssVisitor;
 
-public class CssKeyframeBlockNode extends ASTNode {
+public class CssKeyframeBlockNode extends CssNode {
     private List<CssKeyframeSelectorNode> selectors = new ArrayList<>();
     private List<CssKeyframeDeclarationNode> declarations = new ArrayList<>();
 
@@ -20,7 +21,6 @@ public class CssKeyframeBlockNode extends ASTNode {
         declarations.add(declaration);
     }
 
-    @Override
     public List<ASTNode> getChildren() {
         List<ASTNode> children = new ArrayList<>();
         children.addAll(selectors);
@@ -31,6 +31,10 @@ public class CssKeyframeBlockNode extends ASTNode {
     @Override
     public String toString() {
         return "CSS Keyframe Block Node";
+    }
+
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 }

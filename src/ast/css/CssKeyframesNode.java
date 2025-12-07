@@ -4,9 +4,10 @@ import ast.core.ASTNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import visitors.CssVisitor;
 
 
-public class CssKeyframesNode extends ASTNode {
+public class CssKeyframesNode extends CssNode {
     private String name;
     private List<CssKeyframeBlockNode> blocks = new ArrayList<>();
 
@@ -19,7 +20,6 @@ public class CssKeyframesNode extends ASTNode {
         this.blocks.add(block);
     }
 
-    @Override
     public List<ASTNode> getChildren() {
         List<ASTNode> children = new ArrayList<>();
         children.addAll(blocks);
@@ -29,6 +29,10 @@ public class CssKeyframesNode extends ASTNode {
     @Override
     public String toString() {
         return "CSS Keyframes Node: " + this.name;
+    }
+
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 }

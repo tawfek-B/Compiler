@@ -1,11 +1,9 @@
 package ast.css;
 
 import ast.core.ASTNode;
+import visitors.CssVisitor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class CssMarginRuleNode extends ASTNode {
+public class CssMarginRuleNode extends CssNode {
     private String area;
 //    private List<CssDeclarationNode> declarations = new ArrayList<>();
 
@@ -25,5 +23,9 @@ public class CssMarginRuleNode extends ASTNode {
     @Override
     public String toString() {
         return "CssMarginRuleNode: " + area;
+    }
+
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

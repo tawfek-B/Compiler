@@ -1,8 +1,9 @@
 package ast.jinja;
 
 import ast.core.ASTNode;
+import visitors.JinjaVisitor;
 
-public class JinjaIfNode extends ASTNode {
+public class JinjaIfNode extends JinjaNode {
     private String condition;
     private String body;
     public JinjaIfNode(String condition, String body,  int line) {
@@ -20,5 +21,9 @@ public class JinjaIfNode extends ASTNode {
     @Override
     public String toString() {
         return "JinjaIfNode: if " + condition + " then " + body;
+    }
+
+    public <T> T accept(JinjaVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

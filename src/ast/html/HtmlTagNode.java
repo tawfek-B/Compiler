@@ -1,10 +1,12 @@
 package ast.html;
 
 import ast.core.ASTNode;
+import visitors.HtmlVisitor;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class HtmlTagNode extends ASTNode {
+public class HtmlTagNode extends HtmlNode {
 
     private String tagName;
     private List<HtmlAttributeNode> attributes = new ArrayList<>();
@@ -28,14 +30,16 @@ public class HtmlTagNode extends ASTNode {
         return "HtmlTagNode: " + tagName;
     }
 
-    @Override
     public List<ASTNode> getChildren()
     {
         List<ASTNode> all = new ArrayList<>();
         all.addAll(attributes);
-        all.addAll(children);
 
         return all;
+    }
+
+    public <T> T accept(HtmlVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 }

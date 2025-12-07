@@ -4,8 +4,9 @@ import ast.core.ASTNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import visitors.CssVisitor;
 
-public class CssMediaQueryNode extends ASTNode {
+public class CssMediaQueryNode extends CssNode {
     private String query;
     List<CssRuleNode> rules = new ArrayList<>();
 
@@ -18,7 +19,6 @@ public class CssMediaQueryNode extends ASTNode {
         this.rules.add(rule);
     }
 
-    @Override
     public List<ASTNode> getChildren() {
         List<ASTNode> children = new ArrayList<>();
         children.addAll(rules);
@@ -28,5 +28,9 @@ public class CssMediaQueryNode extends ASTNode {
     @Override
     public String toString() {
         return "CSS Media Query Node: " + query;
+    }
+
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

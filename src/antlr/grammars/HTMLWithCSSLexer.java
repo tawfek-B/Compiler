@@ -1,4 +1,4 @@
-// Generated from C:/Users/Asus/ANTLR/CompilerPractice/src/grammars/HTMLWithCSSLexer.g4 by ANTLR 4.13.2
+// Generated from C:/Users/DELL/IdeaProjects/CompilerPractice/src/grammars/HTMLWithCSSLexer.g4 by ANTLR 4.13.2
 package grammars;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;

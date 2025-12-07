@@ -1,8 +1,9 @@
 package ast.css;
 
 import ast.core.ASTNode;
+import visitors.CssVisitor;
 
-public class CssDeclarationNode extends ASTNode {
+public class CssDeclarationNode extends CssNode {
     private String property;
     private String value;
     private boolean important;
@@ -26,5 +27,9 @@ public class CssDeclarationNode extends ASTNode {
     @Override
     public String toString() {
         return "CssDeclarationNode: " + property + " = " + value;
+    }
+
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

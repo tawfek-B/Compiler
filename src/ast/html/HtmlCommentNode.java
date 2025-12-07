@@ -1,8 +1,9 @@
 package ast.html;
 
 import ast.core.ASTNode;
+import visitors.HtmlVisitor;
 
-public class HtmlCommentNode extends ASTNode {
+public class HtmlCommentNode extends HtmlNode {
     private String comment;
 
     public HtmlCommentNode(String comment,  int line) {
@@ -17,6 +18,10 @@ public class HtmlCommentNode extends ASTNode {
     @Override
     public String toString() {
         return "HtmlCommentNode: " + comment;
+    }
+
+    public <T> T accept(HtmlVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 }

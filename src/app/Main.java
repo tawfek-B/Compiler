@@ -73,6 +73,7 @@ public class Main {
         System.out.println("\n__________Jinja2 AST__________");
         printAst(jinjaDoc, 0);
     }
+
     public static void printAst(ASTNode node, int indent) {
         String prefix = "  ".repeat(indent);
         System.out.println(prefix + node);

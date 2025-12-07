@@ -1,9 +1,18 @@
 package ast.html;
 
-import ast.core.ASTNode;
+import visitors.HtmlVisitor;
 
-public class HtmlDocumentNode extends ASTNode {
+public class HtmlDocumentNode extends HtmlNode {
     public HtmlDocumentNode(int line) {
         super("HTML Document Node", line);
+    }
+
+    @Override
+    public String toString() {
+        return "HTML Document Node";
+    }
+
+    public <T> T accept(HtmlVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

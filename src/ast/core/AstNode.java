@@ -14,32 +14,28 @@ public abstract class ASTNode {
         this.line = line;
     }
 
+//    public abstract <T> T accept(ASTVisitor<T> visitor);
+
     public void add(ASTNode child){
         if(child != null)
             children.add(child);
     }
 
-    public void addChild(ASTNode child){
-        if(child != null)
-            children.add(child);
-    }
 
     public void print(String indent){
-        System.out.println(indent + type + " line(" + line + ")");
+        System.out.println(indent + type + "line(" + line + ")");
         for(ASTNode c : children)
             c.print(indent + " ");
     }
 
-    public List<ASTNode> getChildren(){
+    public List<ASTNode> getChildren() {
         return children;
     }
-
-    public String getName() {
-        return this.getClass().getSimpleName();
+    public void addChild(ASTNode child) {
+        if(child != null)
+            children.add(child);
     }
-
-    @Override
-    public String toString() {
+    public String getName() {
         return this.getClass().getSimpleName();
     }
 }

@@ -4,8 +4,9 @@ import ast.core.ASTNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import visitors.CssVisitor;
 
-public class CssRuleNode extends ASTNode {
+public class CssRuleNode extends CssNode {
     private List<CssDeclarationNode> declarations = new ArrayList<>();
     private List<CssSelectorNode> selectors = new ArrayList<>();
 
@@ -31,5 +32,14 @@ public class CssRuleNode extends ASTNode {
         children.addAll(declarations);
         children.addAll(selectors);
         return children;
+    }
+
+    @Override
+    public String toString() {
+        return "CSS Rule Node";
+    }
+
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

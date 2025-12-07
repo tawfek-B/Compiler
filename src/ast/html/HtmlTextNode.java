@@ -1,8 +1,9 @@
 package ast.html;
 
 import ast.core.ASTNode;
+import visitors.HtmlVisitor;
 
-public class HtmlTextNode extends ASTNode {
+public class HtmlTextNode extends HtmlNode {
     private String text;
 
     public HtmlTextNode(String text, int line) {
@@ -16,5 +17,9 @@ public class HtmlTextNode extends ASTNode {
     @Override
     public String toString() {
         return "HtmlTextNode: \"" + text + "\"";
+    }
+
+    public <T> T accept(HtmlVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

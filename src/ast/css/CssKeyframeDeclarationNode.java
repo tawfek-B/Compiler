@@ -1,11 +1,9 @@
 package ast.css;
 
 import ast.core.ASTNode;
+import visitors.CssVisitor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class CssKeyframeDeclarationNode extends ASTNode {
+public class CssKeyframeDeclarationNode extends CssNode {
     private String property;
     private String value;
     private boolean important;
@@ -27,5 +25,9 @@ public class CssKeyframeDeclarationNode extends ASTNode {
     @Override
     public String toString() {
         return "CSS Keyframe Declaration: " + property + " = " + value;
+    }
+
+    public <T> T accept(CssVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }
