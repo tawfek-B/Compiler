@@ -9,23 +9,25 @@ program
 
 // Statements
 statement
-    : assignment NEWLINE?                       #assign_Statement
+    : decorator NEWLINE functionDec             #decorated_LN_Function_Statement
+    | decorator functionDec                     #decorated_Function_Statement
+    | assignment                                #assign_Statement
     | ifStatement                               #if_Statement
-    | forStatement                              #for_Statement
+//    | forStatement                              #for_Statement
+    | whileStatement                            #while_Statement
+    | tryStatement                              #try_Statement
     | forEachStatement                          #for_Each_Statement
     | functionDec                               #function_Statement
-    | decorator functionDec                     #decorated_Function_Statement
-    | returnStatement NEWLINE?                  #return_Statement
-    | expr NEWLINE?                             #expression_Statement
+    | returnStatement                           #return_Statement
+    | expr                                      #expression_Statement
     ;
 
-// Flask decorator
+// Decorators
 decorator
     : ROUTE LP STRING RP                        #routeDecorator
     ;
 
-
-// Function declarations
+// Functions
 functionDec
     : DEF ID LP parameterList? RP COLON block   #functionDeclaration
     ;
@@ -34,12 +36,12 @@ parameterList
     : ID (COMMA ID)*                            #parameterListDeclaration
     ;
 
+// Blocks
 block
-    : NEWLINE INDENT statement+ DEDENT          #blockStatement
+    : INDENT statement+ DEDENT                  #blockStatement
     ;
 
-
-// Assign / Return
+// Assignment & Return
 assignment
     : ID ASSIGN expr                            #assign
     ;
@@ -48,65 +50,91 @@ returnStatement
     : RETURN expr?                              #returnValue
     ;
 
-
-// If / Elif / Else
+// Conditionals
 ifStatement
-    : IF expr COLON block elifStatement* elseStatement?    #ifBlock
+    : IF expr COLON block elifStatement* elseStatement?  #ifBlock
     ;
 
 elifStatement
-    : ELIF expr COLON block                                #elifBlock
+    : ELIF expr COLON block                     #elifBlock
     ;
 
 elseStatement
-    : ELSE COLON block                                     #elseBlock
+    : ELSE COLON block                          #elseBlock
     ;
-
 
 // Loops
-forStatement
-    : FOR ID ASSIGN expr SEMICOLON expr SEMICOLON assignment COLON block      #forLoop
-    ;
+//forStatement
+//    : FOR ID IN RANGE LP expr COMMA expr (COMMA expr)? RP COLON block     #forLoop
+//    ;
 
 forEachStatement
-    : FOR ID IN expr COLON block                           #forEachLoop
+    : FOR ID IN expr COLON block elseStatement? #forEachLoop
+    ;
+
+whileStatement
+    : WHILE expr COLON block elseStatement?     #whileLoop
+    ;
+
+exceptStatement
+    : EXCEPT expr? COLON block    #exceptBlock
+    ;
+
+tryStatement
+    : TRY COLON block (exceptStatement+ elseStatement? finallyStatement? | finallyStatement)  #tryBlock
+    ;
+
+finallyStatement
+    : FINALLY COLON block   #finallyBlock
     ;
 
 // Expressions
 expr
-    : expr (MULTIPLY|DIVIDE|MODIFY) expr                                             #muldivExpression
-    | expr (PLUS|MINUS) expr                                                         #addsubExpression
-    | expr (EQUAL|NOT_EQUAL|GREATER_THAN|LESS_THAN|GREATER_EQUAL|LESS_EQUAL) expr    #compareExpression
-    | LP expr RP                                                                     #parenthesisExpression
-    | listLiteral                                                                    #listExpression
-    | dictLiteral                                                                    #dictExpression
-    | functionCall                                                                   #callExpression
-    | NUMBER                                                                         #numberExpression
-    | STRING                                                                         #stringExpression
-    | TRUE                                                                           #trueExpression
-    | FALSE                                                                          #falseExpression
-    | ID                                                                             #idExpression
+    : compareExpr
     ;
 
+compareExpr
+    : addExpr ((EQUAL | NOT_EQUAL | GREATER_THAN | LESS_THAN | GREATER_EQUAL | LESS_EQUAL) addExpr)*    #compareExpression
+    ;
 
-// Function calls
+addExpr
+    : mulExpr ((PLUS | MINUS) mulExpr)*         #addsubExpression
+    ;
+
+mulExpr
+    : atom ((MULTIPLY | DIVIDE | MODIFY) atom)* #muldivExpression
+    ;
+
+atom
+    : LP expr RP                                #parenthesisExpression
+    | listLiteral                               #listExpression
+    | dictLiteral                               #dictExpression
+    | functionCall                              #callExpression
+    | NUMBER                                    #numberExpression
+    | STRING                                    #stringExpression
+    | TRUE                                      #trueExpression
+    | FALSE                                     #falseExpression
+    | ID                                        #idExpression
+    ;
+
+// Function Calls
 functionCall
-    : ID LP argumentList? RP                      #functionCallExpression
+    : ID LP argumentList? RP                    #functionCallExpression
     ;
 
 argumentList
-    : expr (COMMA expr)*                          #argumentListExpression
+    : expr (COMMA expr)*                        #argumentListExpression
     ;
 
 // Literals
 listLiteral
-    : LSB (expr (COMMA expr)*)? RSB               #listLiteralExpression
+    : LSB (expr (COMMA expr)*)? RSB             #listLiteralExpression
     ;
 
 dictLiteral
-    : LCB (expr (COMMA pair)*)? RCB               #dictLiteralExpression
+    : LCB (pair (COMMA pair)*)? RCB             #dictLiteralExpression
     ;
 
 pair
-    : ID COLON expr                               #dictPairExpression
+    : ID COLON expr                             #dictPairExpression
     ;

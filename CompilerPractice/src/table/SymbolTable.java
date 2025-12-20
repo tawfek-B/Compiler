@@ -4,69 +4,86 @@ import java.util.*;
 
 public class SymbolTable {
 
-    private final List<Map<String, Object>> scopes = new ArrayList<>();
+    private final Map<String, List<SymbolRow>> scopes = new LinkedHashMap<>();
+    private final Deque<String> scopeStack = new ArrayDeque<>();
 
     public SymbolTable() {
-        enterScope();
+        enterScope("global");
     }
 
-    private Map<String, Object> currentScope() {
-        return scopes.get(scopes.size() - 1);
+    //Scope Management
+
+    public void enterScope(String scopeName) {
+        scopeStack.push(scopeName);
+        scopes.putIfAbsent(scopeName, new ArrayList<>());
     }
 
-    // Creates a new empty scope
-    public Map<String,Object> allocate() {
-        Map<String,Object> newScope = new HashMap<>();
-        scopes.add(newScope);
-        return newScope;
+    public void exitScope() {
+        if (scopeStack.size() > 1) {
+            scopeStack.pop();
+        }
     }
 
-    // Updates existing symbol or creates new in current scope
-    public void set_attribute(String name, Object value) {
-        currentScope().put(name, value);
+    public String getCurrentScope() {
+        return scopeStack.peek();
     }
 
-    // Guaranteed insert into current scope
-    public Object insert(String name, Object value) {
-        currentScope().put(name, value);
-        return value;
+    //Symbol Management
+
+    public SymbolRow addSymbol(
+            String name,
+            String type,
+            String value,
+            int line,
+            int column
+    ) {
+        SymbolRow row = new SymbolRow(
+                name,
+                type,
+                value,
+                line,
+                column,
+                getCurrentScope()
+        );
+
+        scopes.get(getCurrentScope()).add(row);
+        return row;
     }
 
-    // Removes entire symbol table (reset to global only)
-    public void free() {
-        scopes.clear();
-        enterScope();
+    public boolean existsInCurrentScope(String name) {
+        return scopes.get(getCurrentScope())
+                .stream()
+                .anyMatch(s -> s.getName().equals(name));
     }
 
-    // Searches through all scopes from innermost to outermost
-    public Object lookUp(String name) {
-        for (int i = scopes.size() - 1; i >= 0; i--) {
-            if (scopes.get(i).containsKey(name))
-                return scopes.get(i).get(name);
+    public SymbolRow lookup(String name) {
+        for (String scope : scopeStack) {
+            for (SymbolRow row : scopes.get(scope)) {
+                if (row.getName().equals(name)) {
+                    return row;
+                }
+            }
         }
         return null;
     }
 
-    // Checks if symbol exists (any scope)
-    public boolean get_attribute(String name) {
-        return lookUp(name) != null;
+    public List<SymbolRow> getSymbolsInScope(String scope) {
+        return scopes.getOrDefault(scope, List.of());
     }
 
-    // Debug printer
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== SYMBOL TABLE ===\n");
-        for (int i = 0; i < scopes.size(); i++)
-            sb.append("Scope ").append(i).append(": ").append(scopes.get(i)).append("\n");
-        return sb.toString();
+    public Map<String, List<SymbolRow>> getAllScopes() {
+        return scopes;
     }
 
-    public void enterScope() {
-        scopes.add(new HashMap<>());
-    }
+    //Print
 
-    public void exitScope() {
-        if (scopes.size() > 1)
-            scopes.remove(scopes.size() - 1);
+    public void print() {
+        System.out.println("\n=========== SYMBOL TABLE ===========\n");
+        for (Map.Entry<String, List<SymbolRow>> entry : scopes.entrySet()) {
+            System.out.println("Scope: " + entry.getKey());
+            System.out.println("-".repeat(80));
+            entry.getValue().forEach(System.out::println);
+            System.out.println();
+        }
     }
 }

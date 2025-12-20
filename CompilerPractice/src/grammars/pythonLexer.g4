@@ -2,144 +2,148 @@ lexer grammar pythonLexer;
 
 tokens { INDENT, DEDENT }
 
-// MEMBERS (indentation logic)
-@lexer::members {
-
-    // Count indentation levels
+@members {
     private java.util.Stack<Integer> indents = new java.util.Stack<>();
-
-    // Needed to ignore indentation inside parentheses/brackets
-    private int opened = 0;
-
-    // Buffer to emit INDENT/DEDENT properly
-    private java.util.LinkedList<Token> pending = new java.util.LinkedList<>();
-
-    @Override
-    public void emit(Token token) {
-        pending.add(token);
-        super.setToken(token);
-    }
+    private java.util.LinkedList<Token> pendingTokens = new java.util.LinkedList<>();
+    private int lastIndent = 0;
 
     @Override
     public Token nextToken() {
-
-        // If any buffered tokens exist → return them first
-        if (!pending.isEmpty()) {
-            return pending.poll();
+        if (!pendingTokens.isEmpty()) {
+            return pendingTokens.poll();
         }
 
         Token next = super.nextToken();
 
-        // Close all open indents on the end of file
         if (next.getType() == EOF) {
             while (!indents.isEmpty()) {
                 indents.pop();
-                emit(new CommonToken(DEDENT, ""));
+                pendingTokens.add(new CommonToken(DEDENT));
             }
+            pendingTokens.add(next); // EOF
+            return pendingTokens.poll();
         }
 
         return next;
     }
-
-    // Helper: emit INDENT token
-    private void emitIndent(int wsCount) {
-        indents.push(wsCount);
-        emit(new CommonToken(INDENT, "<INDENT>"));
-    }
-
-    // Helper: emit DEDENT tokens
-    private void emitDedent(int wsCount) {
-        while (!indents.isEmpty() && indents.peek() > wsCount) {
-            indents.pop();
-            emit(new CommonToken(DEDENT, "<DEDENT>"));
-        }
-    }
 }
 
 // Keywords
-IF: 'if';
-ELIF: 'elif';
-ELSE: 'else';
-FOR: 'for';
-IN: 'in';
-DEF: 'def';
-TRUE: 'true';
-FALSE: 'false';
-RETURN: 'return';
+DEF     : 'def';
+RETURN  : 'return';
+IF      : 'if';
+ELIF    : 'elif';
+ELSE    : 'else';
+WHILE   : 'while';
+TRY     : 'try';
+FINALLY : 'finally';
+EXCEPT  : 'except';
+FOR     : 'for';
+IN      : 'in';
+TRUE    : 'true';
+FALSE   : 'false';
+RANGE   : 'range';
 
-ROUTE: '@route';
+ROUTE   : '@route';
 
-// Operators and Symbols
-ASSIGN: '=';
-PLUS: '+';
-MINUS: '-';
-MULTIPLY: '*';
-DIVIDE: '/';
-MODIFY: '%';
-EQUAL: '==';
-NOT_EQUAL: '!=';
-GREATER_THAN: '>';
-LESS_THAN: '<';
-GREATER_EQUAL: '>=';
-LESS_EQUAL: '<=';
-LP: '(' { opened++; };
-RP: ')' { opened--; };
-LSB: '[' { opened++; };
-RSB: ']' { opened--; };
-LCB: '{' { opened++; };
-RCB: '}' { opened--; };
-COMMA: ',';
-COLON: ':';
-SEMICOLON: ';';
-DOT: '.';
-DOUBLE_COT: '"';
-HASHTAG: '#';
+// Operators & Symbols
+ASSIGN          : '=';
+PLUS            : '+';
+MINUS           : '-';
+MULTIPLY        : '*';
+DIVIDE          : '/';
+MODIFY          : '%';
+
+EQUAL           : '==';
+NOT_EQUAL       : '!=';
+GREATER_EQUAL   : '>=';
+LESS_EQUAL      : '<=';
+GREATER_THAN    : '>';
+LESS_THAN       : '<';
+
+LP  : '(';
+RP  : ')';
+LSB : '[';
+RSB : ']';
+LCB : '{';
+RCB : '}';
+COLON : ':';
+COMMA : ',';
+SEMICOLON : ';';
+DOT : '.';
 
 // Literals
-NUMBER: [0-9]+ ('.' [0-9]+)?;
-STRING: DOUBLE_COT (~["\r\n])* DOUBLE_COT;
-
-// Identifiers
-ID: [a-zA-Z_][a-zA-Z0-9_]*;
-
-// Comments
-COMMENT: HASHTAG ~[\r\n]* -> skip;
-MULTILINE_COMMENT: '"""' (.)*? '"""' -> skip;
-
-// Indentation
-NEWLINE
-    :   ('\r'? '\n')+  {
-
-            // Count spaces after the newline
-            int spaces = 0;
-            int la = _input.LA(1);
-
-            // skip pure newline inside (),[],{}
-            if (opened > 0) {
-                skip();
-            }
-            else {
-
-                // accumulate indentation
-                while (la == ' ' || la == '\t') {
-                    if (la == ' ') spaces++;
-                    if (la == '\t') spaces += 4; // tabs = 4 spaces
-                    _input.consume();
-                    la = _input.LA(1);
-                }
-
-                emit(new CommonToken(NEWLINE, "\n"));
-
-                int currentIndent = indents.isEmpty() ? 0 : indents.peek();
-
-                if (spaces > currentIndent) {
-                    emitIndent(spaces);
-                } else if (spaces < currentIndent) {
-                    emitDedent(spaces);
-                }
-            }
-        }
+NUMBER
+    : INT ('.' INT)?
     ;
 
-// Ignore isolated whitespace
-WS: [ \t]+ -> skip;
+fragment INT : [0-9]+;
+
+STRING
+    : '"' (~["\r\n])* '"'
+    ;
+
+// Identifiers
+ID
+    : [a-zA-Z_][a-zA-Z_0-9]*
+    ;
+
+// New line with Indentation
+NEWLINE
+    : ('\r'? '\n')+
+      {
+        int indent = 0;
+        int la = _input.LA(1);
+
+        while (la == ' ' || la == '\t') {
+            indent += (la == '\t') ? 4 : 1;
+            _input.consume();
+            la = _input.LA(1);
+        }
+
+        // Create tokens with proper line and column (copy from current NEWLINE token)
+        CommonToken indentToken;
+        CommonToken newlineToken = new CommonToken(NEWLINE);
+        newlineToken.setLine(getLine());
+        newlineToken.setCharPositionInLine(getCharPositionInLine());
+
+        if (indent > lastIndent) {
+            indents.push(indent);
+            lastIndent = indent;
+
+            indentToken = new CommonToken(INDENT);
+            indentToken.setLine(getLine() + 1);
+            indentToken.setCharPositionInLine(0);
+            pendingTokens.add(indentToken);
+        } else {
+            while (!indents.isEmpty() && indent < lastIndent) {
+                indents.pop();
+
+                indentToken = new CommonToken(DEDENT);
+                indentToken.setLine(getLine());
+                indentToken.setCharPositionInLine(-1);
+                pendingTokens.add(indentToken);
+
+                lastIndent = indents.isEmpty() ? 0 : indents.peek();
+            }
+        }
+
+        pendingTokens.add(newlineToken);
+      }
+    ;
+// Skipped
+COMMENT
+    : '#' ~[\r\n]* -> skip
+    ;
+
+MULTILINE_COMMENT
+    : '"""' .*? '"""' -> skip
+    ;
+
+MULTILINE_STRING
+    : '"""' .*? '"""' -> skip
+    ;
+
+WS
+    : [ \t]+ -> skip
+    ;
