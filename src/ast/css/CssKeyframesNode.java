@@ -1,10 +1,10 @@
 package ast.css;
 
+import ast.HtmlWithCssVisitor;
 import ast.core.ASTNode;
 
 import java.util.ArrayList;
 import java.util.List;
-import visitors.CssVisitor;
 
 
 public class CssKeyframesNode extends CssNode {
@@ -31,8 +31,7 @@ public class CssKeyframesNode extends CssNode {
         return "CSS Keyframes Node: " + this.name;
     }
 
-    public <T> T accept(CssVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
 }

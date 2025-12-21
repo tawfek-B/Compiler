@@ -1,45 +1,29 @@
 package ast.html;
 
+import ast.HtmlWithCssVisitor;
 import ast.core.ASTNode;
-import visitors.HtmlVisitor;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public class HtmlTagNode extends HtmlNode {
-
     private String tagName;
-    private List<HtmlAttributeNode> attributes = new ArrayList<>();
+    private List<HtmlAttributeNode> attributes;
 
-    public HtmlTagNode(String tagName,  int line) {
+    public HtmlTagNode(String tagName, int line) {
         super("Html Tag Node", line);
         this.tagName = tagName;
+        this.attributes = new java.util.ArrayList<>();
     }
-    public String getTagName() {
-        return tagName;
-    }
-    public List<HtmlAttributeNode> getAttributes() {
-        return attributes;
-    }
+
     public void addAttribute(HtmlAttributeNode attribute) {
         attributes.add(attribute);
+        add(attribute); // add to children
     }
 
-    @Override
-    public String toString() {
-        return "HtmlTagNode: " + tagName;
+    public List<ASTNode> getChildren() {
+        return super.getChildren(); // already includes attributes + body
     }
 
-    public List<ASTNode> getChildren()
-    {
-        List<ASTNode> all = new ArrayList<>();
-        all.addAll(attributes);
-
-        return all;
-    }
-
-    public <T> T accept(HtmlVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
 }

@@ -1,13 +1,13 @@
 package ast.html;
 
-import ast.core.ASTNode;
-import visitors.HtmlVisitor;
+import ast.HtmlWithCssVisitor;
 
 public class HtmlCommentNode extends HtmlNode {
+
     private String comment;
 
     public HtmlCommentNode(String comment,  int line) {
-        super("Css Comment Node", line);
+        super("Html Comment Node", line);
         this.comment = comment;
     }
 
@@ -20,7 +20,7 @@ public class HtmlCommentNode extends HtmlNode {
         return "HtmlCommentNode: " + comment;
     }
 
-    public <T> T accept(HtmlVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
 

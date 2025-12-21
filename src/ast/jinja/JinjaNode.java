@@ -1,11 +1,15 @@
 package ast.jinja;
 
 import ast.core.ASTNode;
-import visitors.JinjaVisitor;
+import ast.html.HtmlNode;
 
 public abstract class JinjaNode extends ASTNode {
+
     protected JinjaNode(String type, int line) {
         super(type, line);
     }
-    public abstract <T> T accept(JinjaVisitor<T> visitor);
+
+    public void addChild(JinjaNode child) {
+        this.children.add(child);
+    }
 }

@@ -1,17 +1,17 @@
 package ast.html;
 
-import ast.core.ASTNode;
-import visitors.HtmlVisitor;
+import ast.HtmlWithCssVisitor;
 
 public class HtmlAttributeNode extends HtmlNode {
     private String name;
     private String value;
 
     public HtmlAttributeNode(String name, String value,  int line) {
-        super("Css Attribute Node", line);
+        super("Html Attribute Node", line);
         this.name = name;
         this.value = value;
     }
+
     public String getName() {
         return name;
     }
@@ -21,10 +21,11 @@ public class HtmlAttributeNode extends HtmlNode {
 
     @Override
     public String toString() {
-        return "HtmlAttributeNode: " + name + " = " + value;
+        return "HtmlAttributeNode: " + name + " = \"" + value + "\"";
     }
 
-    public <T> T accept(HtmlVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
 }

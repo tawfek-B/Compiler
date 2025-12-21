@@ -1,13 +1,11 @@
 package ast.css;
 
 import ast.core.ASTNode;
-import visitors.CssVisitor;
 
 public class CssKeyframeDeclarationNode extends CssNode {
     private String property;
     private String value;
     private boolean important;
-
 
     public CssKeyframeDeclarationNode(String property, String value, boolean important, int line) {
         super("CSS Keyframe Declaration", line);
@@ -15,6 +13,7 @@ public class CssKeyframeDeclarationNode extends CssNode {
         this.property = property;
         this.important = important;
     }
+
     public String getProperty() {
         return property;
     }
@@ -27,7 +26,4 @@ public class CssKeyframeDeclarationNode extends CssNode {
         return "CSS Keyframe Declaration: " + property + " = " + value;
     }
 
-    public <T> T accept(CssVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
 }

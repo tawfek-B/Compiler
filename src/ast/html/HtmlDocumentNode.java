@@ -1,8 +1,10 @@
 package ast.html;
 
-import visitors.HtmlVisitor;
+
+import ast.HtmlWithCssVisitor;
 
 public class HtmlDocumentNode extends HtmlNode {
+
     public HtmlDocumentNode(int line) {
         super("HTML Document Node", line);
     }
@@ -12,7 +14,7 @@ public class HtmlDocumentNode extends HtmlNode {
         return "HTML Document Node";
     }
 
-    public <T> T accept(HtmlVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

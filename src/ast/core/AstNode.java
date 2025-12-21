@@ -14,13 +14,10 @@ public abstract class ASTNode {
         this.line = line;
     }
 
-//    public abstract <T> T accept(ASTVisitor<T> visitor);
-
     public void add(ASTNode child){
         if(child != null)
             children.add(child);
     }
-
 
     public void print(String indent){
         System.out.println(indent + type + "line(" + line + ")");
@@ -31,11 +28,14 @@ public abstract class ASTNode {
     public List<ASTNode> getChildren() {
         return children;
     }
-    public void addChild(ASTNode child) {
-        if(child != null)
-            children.add(child);
+
+    public int getLine() {
+        return line;
     }
+
     public String getName() {
         return this.getClass().getSimpleName();
     }
+
+    public String getType(){ return this.type; }
 }

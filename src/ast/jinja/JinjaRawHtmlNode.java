@@ -1,14 +1,16 @@
 package ast.jinja;
 
-import ast.core.ASTNode;
-import visitors.JinjaVisitor;
+import ast.HtmlWithCssVisitor;
 
 public class JinjaRawHtmlNode extends JinjaNode {
+
     private String html;
+
     public JinjaRawHtmlNode(String html,  int line) {
-        super("Css Raw Node", line);
+        super("Jinja Raw Html Node", line);
         this.html = html;
     }
+
     public String getHtml() {
         return html;
     }
@@ -18,7 +20,7 @@ public class JinjaRawHtmlNode extends JinjaNode {
         return "JinjaRawHtmlNode: " + html;
     }
 
-    public <T> T accept(JinjaVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

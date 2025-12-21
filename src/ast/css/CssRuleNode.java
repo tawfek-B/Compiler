@@ -1,10 +1,10 @@
 package ast.css;
 
+import ast.HtmlWithCssVisitor;
 import ast.core.ASTNode;
 
 import java.util.ArrayList;
 import java.util.List;
-import visitors.CssVisitor;
 
 public class CssRuleNode extends CssNode {
     private List<CssDeclarationNode> declarations = new ArrayList<>();
@@ -20,6 +20,7 @@ public class CssRuleNode extends CssNode {
     public List<CssSelectorNode> getSelectors() {
         return selectors;
     }
+
     public void addDeclaration(CssDeclarationNode declaration) {
         declarations.add(declaration);
     }
@@ -39,7 +40,7 @@ public class CssRuleNode extends CssNode {
         return "CSS Rule Node";
     }
 
-    public <T> T accept(CssVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

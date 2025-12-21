@@ -1,7 +1,6 @@
 package ast.css;
 
-import ast.core.ASTNode;
-import visitors.CssVisitor;
+import ast.HtmlWithCssVisitor;
 
 public class CssDeclarationNode extends CssNode {
     private String property;
@@ -14,6 +13,7 @@ public class CssDeclarationNode extends CssNode {
         this.value = value;
         this.important = important;
     }
+
     public String getProperty() {
         return property;
     }
@@ -29,7 +29,7 @@ public class CssDeclarationNode extends CssNode {
         return "CssDeclarationNode: " + property + " = " + value;
     }
 
-    public <T> T accept(CssVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

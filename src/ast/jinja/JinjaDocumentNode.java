@@ -1,9 +1,9 @@
 package ast.jinja;
 
-import ast.core.ASTNode;
-import visitors.JinjaVisitor;
+import ast.HtmlWithCssVisitor;
 
 public class JinjaDocumentNode extends JinjaNode {
+
     public JinjaDocumentNode(int line) {
         super("Jinja Document Node", line);
     }
@@ -13,7 +13,7 @@ public class JinjaDocumentNode extends JinjaNode {
         return "Jinja Document Node";
     }
 
-    public <T> T accept(JinjaVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

@@ -1,10 +1,10 @@
 package ast.css;
 
+import ast.HtmlWithCssVisitor;
 import ast.core.ASTNode;
 
 import java.util.ArrayList;
 import java.util.List;
-import visitors.CssVisitor;
 
 public class CssMediaRuleNode extends CssNode {
     private List<CssMediaQueryNode> queries = new ArrayList<>();
@@ -34,9 +34,7 @@ public class CssMediaRuleNode extends CssNode {
         return "CSS Media Rule Node";
     }
 
-    public <T> T accept(CssVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
-
 }

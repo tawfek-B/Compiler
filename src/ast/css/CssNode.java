@@ -1,14 +1,24 @@
 package ast.css;
 
 import ast.core.ASTNode;
-import visitors.CssVisitor;
-import visitors.HtmlVisitor;
+import ast.html.HtmlNode;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class CssNode extends ASTNode {
+
+    List<ASTNode> children = new ArrayList<ASTNode>();
 
     protected CssNode(String type, int line) {
         super(type, line);
     }
 
-    public abstract <T> T accept(CssVisitor<T> visitor);
+    public void addChild(CssNode child) {
+        this.children.add(child);
+    }
+
+    public List<ASTNode> getChildren() {
+        return children;
+    }
 }

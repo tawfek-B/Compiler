@@ -1,14 +1,16 @@
 package ast.jinja;
 
-import ast.core.ASTNode;
-import visitors.JinjaVisitor;
+import ast.HtmlWithCssVisitor;
 
 public class JinjaVarNode extends JinjaNode {
+
     private String name;
+
     public JinjaVarNode(String name, int line) {
-        super("Css Var Node", line);
+        super("Jinja Var Node", line);
         this.name = name;
     }
+
     public String getName() {
         return name;
     }
@@ -18,8 +20,7 @@ public class JinjaVarNode extends JinjaNode {
         return "JinjaVarNode: " + name;
     }
 
-    public <T> T accept(JinjaVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
 }

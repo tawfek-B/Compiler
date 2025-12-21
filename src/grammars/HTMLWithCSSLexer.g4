@@ -5,7 +5,7 @@ JINJA_BLOCK_OPEN      : '{%' -> pushMode(JINJA_BLOCK) ;
 JINJA_EXPR_OPEN       : '{{' -> pushMode(JINJA_EXPR) ;
 JINJA_COMMENT_OPEN    : '{#' -> pushMode(JINJA_COMMENT) ;
 JINJA_RAW_OPEN        : '{% raw %}' -> pushMode(JINJA_RAW) ;
-JINJA_ENDRAW          : '{% endraw %}' ;  // stays in default mode
+JINJA_ENDRAW          : '{% endraw %}' ;
 
 // HTML tags
 TAG_OPEN              : '<' -> pushMode(TAG) ;
@@ -13,11 +13,11 @@ SCRIPT_OPEN           : '<script' (~'>')* '>' -> pushMode(SCRIPT) ;
 STYLE_OPEN            : '<style' (~'>')* '>' -> pushMode(STYLE) ;
 
 // tokens
-HTML_COMMENT          : '<!--' .*? '-->' ;
-HTML_CONDITIONAL_COMMENT : '<![CDATA[' .*? ']]>' | '<!' (~'>')* '>' ;
-XML                   : '<?xml' .*? '>' ;
-CDATA                 : '<![CDATA[' .*? ']]>' ;
-DTD                   : '<!DOCTYPE' .*? '>' ;
+XML                     : '<?xml' .*? '>' ;
+DTD                     : '<!DOCTYPE' .*? '>' ;
+CDATA                   : '<![CDATA[' .*? ']]>' ;
+HTML_CONDITIONAL_COMMENT: '<!--[' .*? ']-->' ;
+HTML_COMMENT            : '<!--' .*? '-->' ;
 SCRIPTLET             : '<%' .*? '%>' | '<?' .*? '?>' ;
 
 SEA_WS                : [ \t\r\n]+ -> skip ;
@@ -77,18 +77,17 @@ mode STYLE;
         :   '</style>' -> popMode
         ;
 
-
-CHARSET             : '@charset' S* STRING_MACR? S* ';' ;
-IMPORT              : '@import' ;
-KEYFRAMES           : '@keyframes' ;
-MEDIA               : '@media' ;
-PAGE                : '@page' ;
+CHARSET     : '@charset' S* STRING_MACR? S* ';' ;
+IMPORT      : '@import' S* ;
+KEYFRAMES   : '@keyframes' S* ;
+MEDIA       : '@media' S* ;
+PAGE        : '@page' S* ;
+VIEWPORT    : '@viewport' S* ;
+FONTFACE    : '@font-face' S* ;
 MARGIN_AREA         : '@top-left-corner' | '@top-left' | '@top-center' | '@top-right' | '@top-right-corner'
                     | '@bottom-left-corner' | '@bottom-left' | '@bottom-center' | '@bottom-right' | '@bottom-right-corner'
                     | '@left-top' | '@left-middle' | '@left-bottom'
                     | '@right-top' | '@right-middle' | '@right-bottom' ;
-VIEWPORT            : '@viewport' ;
-FONTFACE            : '@font-face' ;
 ATKEYWORD           : '@' MINUS? IDENT_MACR ;
 CLASSKEYWORD        : '.' IDENT_MACR ;
 STRING              : STRING_MACR ;
@@ -137,21 +136,21 @@ SL_COMMENT          : '//' .*? [\n\r] -> channel(HIDDEN) ;
 IMPORTANT           : '!' S* 'important' ;
 
 CSS_TEXT            : . ;
-    mode JINJA_BLOCK;
-        JINJA_BLOCK_CLOSE   : '%}' -> popMode ;
-        JINJA_BLOCK_CONTENT : (. | '\n')+? ;   // allows everything including {%
-
     mode JINJA_EXPR;
         JINJA_EXPR_CLOSE    : '}}' -> popMode ;
-        JINJA_EXPR_CONTENT  : (. | '\n')+? ;
+        JINJA_EXPR_CONTENT  : ( ~('}' ) | '}' ~('}' ) )+ ;
+
+    mode JINJA_BLOCK;
+        JINJA_BLOCK_CLOSE   : '%}' -> popMode ;
+        JINJA_BLOCK_CONTENT : ( ~('%' ) | '%' ~('}' ) )+ ;
 
     mode JINJA_COMMENT;
         JINJA_COMMENT_CLOSE : '#}' -> popMode ;
-        JINJA_COMMENT_CONTENT : (. | '\n')+? ;
+        JINJA_COMMENT_CONTENT : ( ~('#' ) | '#' ~('}' ) )+ ;
 
-    mode JINJA_RAW;
-        JINJA_RAW_END       : '{% endraw %}' -> popMode ;
-        JINJA_RAW_CONTENT   : (. | '\n')+? ;
+   mode JINJA_RAW;
+       JINJA_RAW_END       : '{% endraw %}' -> popMode ;
+       JINJA_RAW_CONTENT   : ( ~('%' | '{') | '{' ~'%' | '%' ~'{' )+ ;
 
 //CSS fragments
 fragment IDENT_MACR     : NAME_START NAME_CHAR* ;

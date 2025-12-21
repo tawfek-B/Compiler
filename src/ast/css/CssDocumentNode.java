@@ -1,10 +1,9 @@
 package ast.css;
 
-import ast.core.ASTNode;
+import ast.HtmlWithCssVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
-import visitors.CssVisitor;
 
 public class CssDocumentNode extends CssNode {
 
@@ -13,8 +12,12 @@ public class CssDocumentNode extends CssNode {
     public CssDocumentNode(int line) {
         super("CSS Document Node", line);
     }
-    public void addRule(CssRuleNode rule) {
+    public void addRule(CssNode rule) {
         rules.add(rule);
+    }
+
+    public List<CssNode> getRules() {
+        return rules;
     }
 
     @Override
@@ -22,7 +25,7 @@ public class CssDocumentNode extends CssNode {
         return "CSS Document Node";
     }
 
-    public <T> T accept(CssVisitor<T> visitor) {
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

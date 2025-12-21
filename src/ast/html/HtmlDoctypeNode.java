@@ -2,25 +2,21 @@ package ast.html;
 
 import ast.HtmlWithCssVisitor;
 
-public class HtmlTextNode extends HtmlNode {
-
+public class HtmlDoctypeNode extends HtmlNode {
     private String text;
 
-    public HtmlTextNode(String text, int line) {
-        super("Html Text Node", line);
+    public HtmlDoctypeNode(String text, int line) {
+        super("DoctypeNode", line);
         this.text = text;
-    }
-
-    public String getText() {
-        return text;
     }
 
     @Override
     public String toString() {
-        return "HtmlTextNode: \"" + text + "\"";
+        return "DoctypeNode: " + text;
     }
 
     public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
 }
