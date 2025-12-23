@@ -1,9 +1,6 @@
 package ast.python;
 
-import ast.core.ASTNode;
-import ast.core.ASTVisitor;
-import ast.core.BlockNode;
-import ast.core.StatementNode;
+import ast.core.*;
 
 import java.util.List;
 
@@ -52,6 +49,11 @@ public class FunctionDefNode extends StatementNode {
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
+        return null;
     }
 
     public void setBody(ASTNode child) {

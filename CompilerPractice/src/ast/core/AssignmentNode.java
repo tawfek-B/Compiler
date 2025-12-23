@@ -1,30 +1,26 @@
-package ast.python;
+package ast.core;
 
-import ast.core.ASTVisitor;
-import ast.core.ExpressionNode;
-import ast.core.HtmlWithCssVisitor;
+public class AssignmentNode extends StatementNode {
 
-public class KeyValueNode extends ExpressionNode {
-
-    private final ExpressionNode key;
+    private final IdentifierNode target;
     private final ExpressionNode value;
 
-    public KeyValueNode(
-            ExpressionNode key,
+    public AssignmentNode(
+            IdentifierNode target,
             ExpressionNode value,
             int line,
             int column
     ) {
         super(line, column);
-        this.key = key;
+        this.target = target;
         this.value = value;
 
-        add(key);
+        add(target);
         add(value);
     }
 
-    public ExpressionNode getKey() {
-        return key;
+    public IdentifierNode getTarget() {
+        return target;
     }
 
     public ExpressionNode getValue() {
@@ -38,6 +34,9 @@ public class KeyValueNode extends ExpressionNode {
 
     @Override
     public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this);
+
     }
+
+
 }

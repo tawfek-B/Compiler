@@ -1,16 +1,12 @@
-package ast.python;
+package ast.core;
 
-import ast.core.ASTVisitor;
-import ast.core.ExpressionNode;
-import ast.core.HtmlWithCssVisitor;
-
-public class LogicalExpressionNode extends ExpressionNode {
+public class BinaryExpressionNode extends ExpressionNode {
 
     private final ExpressionNode left;
     private final String operator;
     private final ExpressionNode right;
 
-    public LogicalExpressionNode(
+    public BinaryExpressionNode(
             ExpressionNode left,
             String operator,
             ExpressionNode right,
@@ -45,6 +41,7 @@ public class LogicalExpressionNode extends ExpressionNode {
 
     @Override
     public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this);
+
     }
 }

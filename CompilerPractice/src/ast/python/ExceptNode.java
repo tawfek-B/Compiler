@@ -1,9 +1,6 @@
 package ast.python;
 
-import ast.core.ASTVisitor;
-import ast.core.BlockNode;
-import ast.core.ExpressionNode;
-import ast.core.StatementNode;
+import ast.core.*;
 
 public class ExceptNode extends StatementNode {
 
@@ -42,5 +39,10 @@ public class ExceptNode extends StatementNode {
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
+        return null;
     }
 }

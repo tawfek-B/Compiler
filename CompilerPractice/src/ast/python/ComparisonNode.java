@@ -2,6 +2,7 @@ package ast.python;
 
 import ast.core.ASTVisitor;
 import ast.core.ExpressionNode;
+import ast.core.HtmlWithCssVisitor;
 import ast.core.IdentifierNode;
 
 public class ComparisonNode extends ExpressionNode {
@@ -41,5 +42,10 @@ public class ComparisonNode extends ExpressionNode {
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
+        return null;
     }
 }

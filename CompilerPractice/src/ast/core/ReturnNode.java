@@ -1,30 +1,33 @@
-package ast.python;
+package ast.core;
 
-import ast.core.ASTVisitor;
-import ast.core.ExpressionNode;
-import ast.core.HtmlWithCssVisitor;
-
-public class DecoratorNode extends ExpressionNode {
+public class ReturnNode extends StatementNode {
 
     private final ExpressionNode expression;
 
-    public DecoratorNode(ExpressionNode expression, int line, int column) {
+    public ReturnNode(ExpressionNode expression, int line, int column) {
         super(line, column);
         this.expression = expression;
         add(expression);
     }
 
+
+
     public ExpressionNode getExpression() {
         return expression;
     }
-
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+
     }
 
     @Override
     public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this.getExpression());
+
+    }
+
+    public ASTNode setValue(ASTNode value) {
+        return value;
     }
 }

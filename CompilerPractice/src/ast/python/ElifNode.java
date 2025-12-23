@@ -33,4 +33,9 @@ public class ElifNode extends StatementNode {
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
+        return null;
+    }
 }

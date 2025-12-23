@@ -3,6 +3,7 @@ package ast.python;
 import ast.core.ASTNode;
 import ast.core.ExpressionNode;
 import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 import java.util.List;
 
@@ -23,6 +24,11 @@ public class ListNode extends ExpressionNode {
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
+        return null;
     }
 
     public void addElements(ExpressionNode el) {

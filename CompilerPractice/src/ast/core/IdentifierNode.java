@@ -1,14 +1,10 @@
-package ast.python;
+package ast.core;
 
-import ast.core.ASTVisitor;
-import ast.core.ASTNode;
-import ast.core.HtmlWithCssVisitor;
-
-public class ParameterNode extends ASTNode {
+public class IdentifierNode extends ExpressionNode {
 
     private final String name;
 
-    public ParameterNode(String name, int line, int column) {
+    public IdentifierNode(String name, int line, int column) {
         super(line, column);
         this.name = name;
     }
@@ -20,10 +16,12 @@ public class ParameterNode extends ASTNode {
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+
     }
 
     @Override
     public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this);
+
     }
 }
