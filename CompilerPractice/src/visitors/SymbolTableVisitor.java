@@ -46,13 +46,15 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
     @Override
     public Void visit(FunctionDefNode node) {
 
-        symbolTable.addSymbol(
+        SymbolRow functionSymbol = symbolTable.addSymbol(
                 node.getName(),
                 "function",
                 null,
                 node.getLine(),
                 node.getColumn()
         );
+
+        labelTable.generateLabel(functionSymbol);
 
         symbolTable.enterScope(node.getName());
 
@@ -66,11 +68,14 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
             );
         }
 
-        node.getBody().accept(this);
+        if (node.getBody() != null ) {
 
+            node.getBody().accept(this);
+        }
         symbolTable.exitScope();
         return null;
     }
+
 
     @Override
     public Void visit(ParameterNode node) {
@@ -98,9 +103,13 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
             );
         }
 
-        node.getValue().accept(this);
+        if (node.getValue() != null) {
+            node.getValue().accept(this);
+        }
+
         return null;
     }
+
 
     // if statements
 
@@ -108,8 +117,13 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
     public Void visit(IfNode node) {
         labelTable.generateAnonymousLabel();
 
-        node.getCondition().accept(this);
-        node.getThenBlock().accept(this);
+        if (node.getCondition() != null) {
+            node.getCondition().accept(this);
+        }
+        if (node.getThenBlock() != null) {
+            node.getThenBlock().accept(this);
+        }
+
 
         for (ElifNode e : node.getElifBlocks()) {
             e.accept(this);
@@ -151,7 +165,7 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
     @Override
     public Void visit(ForNode node) {
 
-        symbolTable.addSymbol(
+        SymbolRow forSymbol = symbolTable.addSymbol(
                 node.getVariable().getName(),
                 "loop_var",
                 null,
@@ -159,10 +173,16 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
                 node.getVariable().getColumn()
         );
 
-        labelTable.generateAnonymousLabel();
+        labelTable.generateLabel(forSymbol);
 
-        node.getIterable().accept(this);
-        node.getBody().accept(this);
+        if (node.getIterable() != null) {
+            node.getIterable().accept(this);
+        }
+
+        if (node.getBody() != null) {
+            node.getBody().accept(this);
+        }
+
         return null;
     }
 
@@ -219,8 +239,13 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(ComparisonNode node) {
-        node.getLeft().accept(this);
-        node.getRight().accept(this);
+
+        if (node.getLeft() != null) {
+            node.getLeft().accept(this);
+        }
+        if (node.getRight() != null) {
+            node.getRight().accept(this);
+        }
         return null;
     }
 
@@ -260,4 +285,9 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override public Void visit(BreakNode node) { return null; }
     @Override public Void visit(ContinueNode node) { return null; }
+
+    @Override
+    public Void visit(ArgumentListNode argumentListNode) {
+        return null;
+    }
 }
