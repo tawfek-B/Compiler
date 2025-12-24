@@ -17,7 +17,9 @@ public class LabelTable {
     }
 
     public String generateAnonymousLabel() {
-        return "L" + counter++;
+        String label = "L" + counter++;
+        labels.put(label, label);
+        return label;
     }
 
     public String getLabel(SymbolRow symbol) {

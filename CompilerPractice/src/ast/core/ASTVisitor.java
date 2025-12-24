@@ -45,5 +45,5 @@ public interface ASTVisitor<T> {
     T visit(LogicalExpressionNode node);
     T visit(BreakNode node);
     T visit(ContinueNode node);
-
+    T visit(ArgumentListNode argumentListNode);
 }
