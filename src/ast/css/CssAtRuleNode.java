@@ -1,6 +1,8 @@
 package ast.css;
 
-import ast.HtmlWithCssVisitor;
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
+import ast.css.*;
 import ast.core.ASTNode;
 
 import java.util.ArrayList;
@@ -10,11 +12,12 @@ public class CssAtRuleNode extends CssNode {
     private String name;
     private String value;
 
-    public CssAtRuleNode(String name, String value, int line) {
-        super("Css At Rule Node", line);
+    public CssAtRuleNode(String name, String value, int line,int column) {
+        super("Css At Rule Node", line,column);
         this.name = name;
         this.value = value;
     }
+
     public String getName() {
         return name;
     }
@@ -31,4 +34,9 @@ public class CssAtRuleNode extends CssNode {
         return visitor.visit(this);
     }
 
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
+    }
 }

@@ -10,8 +10,8 @@ public abstract class CssNode extends ASTNode {
 
     List<ASTNode> children = new ArrayList<ASTNode>();
 
-    protected CssNode(String type, int line) {
-        super(type, line);
+    protected CssNode(String type, int line,int column) {
+        super(type, line, column);
     }
 
     public void addChild(CssNode child) {

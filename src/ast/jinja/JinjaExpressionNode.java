@@ -1,21 +1,34 @@
 package ast.jinja;
 
-import ast.HtmlWithCssVisitor;
+import ast.core.ASTNode;
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 public class JinjaExpressionNode extends JinjaNode {
+    private final ASTNode expression;
 
-    private String expression;
-
-    public JinjaExpressionNode(String expression, int line) {
-        super("Jinja Expression Node", line);
+    public JinjaExpressionNode(ASTNode expression, int line, int column) {
+        super("Jinja Expression Node", line, column);
         this.expression = expression;
+        if (expression != null) {
+            add(expression);
+        }
     }
 
-    public String getExpression() {
+    public ASTNode getExpression() {
         return expression;
     }
 
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
+    @Override
+    public String toString() {
+        return "JinjaExpressionNode: " + (expression != null ? expression.getType() : "null");
     }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
+    }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 }

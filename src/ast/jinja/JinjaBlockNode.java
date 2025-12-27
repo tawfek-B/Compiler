@@ -1,13 +1,14 @@
 package ast.jinja;
 
-import ast.HtmlWithCssVisitor;
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 public class JinjaBlockNode extends JinjaNode {
 
     private String name;
 
-    public JinjaBlockNode(String name, int line) {
-        super("Jinja Block Node", line);
+    public JinjaBlockNode(String name, int line, int column) {
+        super("Jinja Block Node", line, column);
         this.name = name;
     }
 
@@ -20,7 +21,11 @@ public class JinjaBlockNode extends JinjaNode {
         return "JinjaBlockNode: " + name;
     }
 
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
     }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 }

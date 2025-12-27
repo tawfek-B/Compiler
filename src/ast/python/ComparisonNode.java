@@ -1,0 +1,51 @@
+package ast.python;
+
+import ast.core.ASTVisitor;
+import ast.core.ExpressionNode;
+import ast.core.HtmlWithCssVisitor;
+import ast.core.IdentifierNode;
+
+public class ComparisonNode extends ExpressionNode {
+
+    private final ExpressionNode left;
+    private final String operator;
+    private final ExpressionNode right;
+
+    public ComparisonNode(
+            ExpressionNode left,
+            String operator,
+            ExpressionNode right,
+            int line,
+            int column
+    ) {
+        super(line, column);
+        this.left = left;
+        this.operator = operator;
+        this.right = right;
+
+        add(left);
+        add(right);
+    }
+
+    public ExpressionNode getLeft() {
+        return left;
+    }
+
+    public String getOperator() {
+        return operator;
+    }
+
+    public ExpressionNode getRight() {
+        return right;
+    }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
+        return null;
+    }
+}

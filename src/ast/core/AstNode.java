@@ -5,24 +5,31 @@ import java.util.List;
 
 public abstract class ASTNode {
 
-    public final String type;
-    public final int line;
-    public final List<ASTNode> children = new ArrayList<>();
+    protected final String type;
+    protected final int line;
+    protected final int column;
+    protected final List<ASTNode> children = new ArrayList<>();
 
-    protected ASTNode(String type, int line) {
+    protected ASTNode(String type ,int line, int column) {
         this.type = type;
         this.line = line;
+        this.column = column;
     }
 
-    public void add(ASTNode child){
-        if(child != null)
+    protected ASTNode(int line, int column) {
+        this.type = "python";
+        this.line = line;
+        this.column = column;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void add(ASTNode child) {
+        if (child != null) {
             children.add(child);
-    }
-
-    public void print(String indent){
-        System.out.println(indent + type + "line(" + line + ")");
-        for(ASTNode c : children)
-            c.print(indent + " ");
+        }
     }
 
     public List<ASTNode> getChildren() {
@@ -33,9 +40,22 @@ public abstract class ASTNode {
         return line;
     }
 
-    public String getName() {
-        return this.getClass().getSimpleName();
+    public int getColumn() {
+        return column;
     }
 
-    public String getType(){ return this.type; }
+    public abstract <T> T accept(ASTVisitor<T> visitor);
+
+    public abstract <T> T accept(HtmlWithCssVisitor<T> visitor);
+
+
+    public void print(String indent) {
+        System.out.println(
+                indent + getClass().getSimpleName() +
+                        " (line=" + line + ", col=" + column + ")"
+        );
+        for (ASTNode child : children) {
+            child.print(indent + "  ");
+        }
+    }
 }

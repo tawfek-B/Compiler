@@ -5,8 +5,8 @@ import ast.html.HtmlNode;
 
 public abstract class JinjaNode extends ASTNode {
 
-    protected JinjaNode(String type, int line) {
-        super(type, line);
+    protected JinjaNode(String type, int line, int column) {
+        super(type, line, column);
     }
 
     public void addChild(JinjaNode child) {

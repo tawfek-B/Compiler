@@ -1,7 +1,8 @@
 package ast.css;
 
-import ast.HtmlWithCssVisitor;
 import ast.core.ASTNode;
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,8 +11,8 @@ public class CssKeyframeBlockNode extends CssNode {
     private List<CssKeyframeSelectorNode> selectors = new ArrayList<>();
     private List<CssKeyframeDeclarationNode> declarations = new ArrayList<>();
 
-    public CssKeyframeBlockNode(int line) {
-        super("CSS Keyframe Block Node", line);
+    public CssKeyframeBlockNode(int line, int column) {
+        super("CSS Keyframe Block Node", line, column);
     }
 
     public void addSelector(CssKeyframeSelectorNode selector) {
@@ -29,13 +30,16 @@ public class CssKeyframeBlockNode extends CssNode {
     }
 
     @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
+    }
+
+    @Override
+    public <T> T accept(ast.core.HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
+
+    @Override
     public String toString() {
         return "CSS Keyframe Block Node";
     }
 
-
-
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
 }

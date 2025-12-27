@@ -26,7 +26,7 @@ htmlElement
     | TAG_OPEN TAG_NAME htmlAttribute* TAG_SLASH_CLOSE  # htmlVoidTag
     | SCRIPTLET                                         # scriptletElement
     | SCRIPT_OPEN (SCRIPT_BODY | SCRIPT_SHORT_BODY)     # scriptTag
-    | STYLE_OPEN stylesheet STYLE_CLOSE                 # styleTag
+    | style                                             # styleTag
     ;
 
 style

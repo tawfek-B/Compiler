@@ -1,12 +1,13 @@
 package ast.html;
 
 
-import ast.HtmlWithCssVisitor;
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 public class HtmlDocumentNode extends HtmlNode {
 
-    public HtmlDocumentNode(int line) {
-        super("HTML Document Node", line);
+    public HtmlDocumentNode(int line, int column) {
+        super("HTML Document Node", line, column);
     }
 
     @Override
@@ -14,7 +15,11 @@ public class HtmlDocumentNode extends HtmlNode {
         return "HTML Document Node";
     }
 
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
     }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 }

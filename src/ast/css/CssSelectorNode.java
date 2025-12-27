@@ -1,7 +1,8 @@
 package ast.css;
 
-import ast.HtmlWithCssVisitor;
 import ast.core.ASTNode;
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,8 +12,8 @@ public class CssSelectorNode extends CssNode {
     private String selector;
     private List<CssDeclarationNode> declarations = new ArrayList<>();
 
-    public CssSelectorNode(String selector, int line) {
-        super("Css Selector Node", line);
+    public CssSelectorNode(String selector, int line, int column) {
+        super("Css Selector Node", line, column);
         this.selector = selector;
     }
 
@@ -35,11 +36,15 @@ public class CssSelectorNode extends CssNode {
     }
 
     @Override
-    public String toString(){
-        return "CssSelectorNode: " + selector;
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
     }
 
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
+
+    @Override
+    public String toString(){
+        return "CssSelectorNode: " + selector;
     }
 }

@@ -1,14 +1,16 @@
 package ast.jinja;
 
-import ast.HtmlWithCssVisitor;
+
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 public class JinjaForNode extends JinjaNode {
     private String variable;
     private String iterable;
     private String body;
 
-    public JinjaForNode(String variable, String iterable, String body, int line) {
-        super("Jinja for loop", line);
+    public JinjaForNode(String variable, String iterable, String body, int line, int column) {
+        super("Jinja for loop", line, column);
         this.variable = variable;
         this.iterable = iterable;
         this.body = body;
@@ -29,7 +31,11 @@ public class JinjaForNode extends JinjaNode {
         return "JinjaForNode: for " + variable + " in " + iterable + " -> " + body;
     }
 
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
     }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 }

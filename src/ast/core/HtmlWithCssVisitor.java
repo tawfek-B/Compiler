@@ -1,10 +1,8 @@
-package ast;
+package ast.core;
 
-import ast.core.ASTNode;
 import ast.html.*;
 import ast.css.*;
 import ast.jinja.*;
-import org.w3c.dom.html.HTMLElement;
 
 public interface HtmlWithCssVisitor <T>{
 
@@ -40,5 +38,25 @@ public interface HtmlWithCssVisitor <T>{
     T visit(JinjaNode node);
     T visit(JinjaRawHtmlNode node);
     T visit(JinjaVarNode node);
+    T visit(ProgramNode node);
+    T visit(BlockNode node);
+
+    // Statements
+    T visit(StatementNode node);
+    T visit(AssignmentNode node);
+    T visit(ReturnNode node);
+
+    // Expressions
+    T visit(ExpressionNode node);
+    T visit(BinaryExpressionNode node);
+    T visit(UnaryExpressionNode node);
+    T visit(CallExpressionNode node);
+
+    // Identifiers & Literals
+    T visit(IdentifierNode node);
+    T visit(NumberLiteralNode node);
+    T visit(StringLiteralNode node);
+    T visit(BooleanLiteralNode node);
+    T visit(NullLiteralNode node);
 
 }

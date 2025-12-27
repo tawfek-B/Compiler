@@ -1,7 +1,8 @@
 package ast.css;
 
-import ast.HtmlWithCssVisitor;
 import ast.core.ASTNode;
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,8 +11,8 @@ public class CssRuleNode extends CssNode {
     private List<CssDeclarationNode> declarations = new ArrayList<>();
     private List<CssSelectorNode> selectors = new ArrayList<>();
 
-    public CssRuleNode(int line) {
-        super("CSS Rule Node", line);
+    public CssRuleNode(int line, int column) {
+        super("CSS Rule Node", line, column);
     }
 
     public List<CssDeclarationNode> getDeclarations() {
@@ -36,11 +37,16 @@ public class CssRuleNode extends CssNode {
     }
 
     @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
+    }
+
+    @Override
+    public <T> T accept(ast.core.HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
+
+    @Override
     public String toString() {
         return "CSS Rule Node";
     }
 
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
 }

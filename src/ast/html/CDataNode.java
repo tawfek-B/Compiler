@@ -1,12 +1,14 @@
 package ast.html;
 
-import ast.HtmlWithCssVisitor;
+
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 public class CDataNode extends HtmlNode {
     private String data;
 
-    public CDataNode(String data, int line) {
-        super("CData Node", line);
+    public CDataNode(String data, int line, int column) {
+        super("CData Node", line, column);
         this.data = data;
     }
     public String  getData() {
@@ -19,8 +21,11 @@ public class CDataNode extends HtmlNode {
     }
 
 
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
     }
 
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 }

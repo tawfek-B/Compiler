@@ -1,15 +1,25 @@
 package ast.jinja;
 
-import ast.HtmlWithCssVisitor;
+
+import ast.core.ASTVisitor;
+import ast.core.HtmlWithCssVisitor;
 
 public class JinjaRawHtmlNode extends JinjaNode {
 
     private String html;
 
-    public JinjaRawHtmlNode(String html,  int line) {
-        super("Jinja Raw Html Node", line);
+    public JinjaRawHtmlNode(String html,  int line, int column) {
+        super("Jinja Raw Html Node", line,  column);
         this.html = html;
     }
+
+    @Override
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return null;
+    }
+
+    @Override
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 
     public String getHtml() {
         return html;
@@ -20,7 +30,4 @@ public class JinjaRawHtmlNode extends JinjaNode {
         return "JinjaRawHtmlNode: " + html;
     }
 
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
 }
