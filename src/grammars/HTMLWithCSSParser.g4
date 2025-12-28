@@ -15,7 +15,7 @@ documentItem
     | HTML_CONDITIONAL_COMMENT                          # conditionalCommentItem
     | jinjaExpression                                   # jinjaExprItem
     | jinjaBlock                                        # jinjaBlockItem
-    | jinjaComment                                      # jinjaCommentItem
+    | jinjaComment                                      # jinjaCommfsentItem
     | htmlElement                                       # htmlElementItem
     ;
 
@@ -26,7 +26,7 @@ htmlElement
     | TAG_OPEN TAG_NAME htmlAttribute* TAG_SLASH_CLOSE  # htmlVoidTag
     | SCRIPTLET                                         # scriptletElement
     | SCRIPT_OPEN (SCRIPT_BODY | SCRIPT_SHORT_BODY)     # scriptTag
-    | style                                             # styleTag
+    | STYLE_OPEN stylesheet STYLE_CLOSE                 # styleTag
     ;
 
 style

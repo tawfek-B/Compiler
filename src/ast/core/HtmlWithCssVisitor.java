@@ -1,8 +1,10 @@
 package ast.core;
 
+import ast.core.ASTNode;
 import ast.html.*;
 import ast.css.*;
 import ast.jinja.*;
+import org.w3c.dom.html.HTMLElement;
 
 public interface HtmlWithCssVisitor <T>{
 

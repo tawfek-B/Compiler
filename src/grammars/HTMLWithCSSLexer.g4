@@ -13,12 +13,12 @@ SCRIPT_OPEN           : '<script' (~'>')* '>' -> pushMode(SCRIPT) ;
 STYLE_OPEN            : '<style' (~'>')* '>' -> pushMode(STYLE) ;
 
 // tokens
+HTML_COMMENT          : '<!--' .*? '-->' ;
+HTML_CONDITIONAL_COMMENT : '<![CDATA[' .*? ']]>' | '<!' (~'>')* '>' ;
 XML                   : '<?xml' .*? '>' ;
 CDATA                 : '<![CDATA[' .*? ']]>' ;
 DTD                   : '<!DOCTYPE' .*? '>' ;
 SCRIPTLET             : '<%' .*? '%>' | '<?' .*? '?>' ;
-HTML_COMMENT          : '<!--' .*? '-->' ;
-HTML_CONDITIONAL_COMMENT : '<![CDATA[' .*? ']]>' | '<!' (~'>')* '>' ;
 
 SEA_WS                : [ \t\r\n]+ -> skip ;
 

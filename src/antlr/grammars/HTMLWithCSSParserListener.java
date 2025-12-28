@@ -114,17 +114,17 @@ public interface HTMLWithCSSParserListener extends ParseTreeListener {
 	 */
 	void exitJinjaBlockItem(HTMLWithCSSParser.JinjaBlockItemContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code jinjaCommentItem}
+	 * Enter a parse tree produced by the {@code jinjaCommfsentItem}
 	 * labeled alternative in {@link HTMLWithCSSParser#documentItem}.
 	 * @param ctx the parse tree
 	 */
-	void enterJinjaCommentItem(HTMLWithCSSParser.JinjaCommentItemContext ctx);
+	void enterJinjaCommfsentItem(HTMLWithCSSParser.JinjaCommfsentItemContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code jinjaCommentItem}
+	 * Exit a parse tree produced by the {@code jinjaCommfsentItem}
 	 * labeled alternative in {@link HTMLWithCSSParser#documentItem}.
 	 * @param ctx the parse tree
 	 */
-	void exitJinjaCommentItem(HTMLWithCSSParser.JinjaCommentItemContext ctx);
+	void exitJinjaCommfsentItem(HTMLWithCSSParser.JinjaCommfsentItemContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code htmlElementItem}
 	 * labeled alternative in {@link HTMLWithCSSParser#documentItem}.
