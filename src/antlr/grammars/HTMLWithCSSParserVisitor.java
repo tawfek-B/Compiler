@@ -73,12 +73,12 @@ public interface HTMLWithCSSParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitJinjaBlockItem(HTMLWithCSSParser.JinjaBlockItemContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code jinjaCommfsentItem}
+	 * Visit a parse tree produced by the {@code jinjaCommentItem}
 	 * labeled alternative in {@link HTMLWithCSSParser#documentItem}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitJinjaCommfsentItem(HTMLWithCSSParser.JinjaCommfsentItemContext ctx);
+	T visitJinjaCommentItem(HTMLWithCSSParser.JinjaCommentItemContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code htmlElementItem}
 	 * labeled alternative in {@link HTMLWithCSSParser#documentItem}.

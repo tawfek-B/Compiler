@@ -5,20 +5,21 @@
     <!--[if IE]>
     <p>This is an HTML conditional comment</p>
     <![endif]-->
-    <title>Test HTML + Full CSS Grammar</title>
+    <title>{{ page_title|default("Test HTML + Full CSS Grammar") }}</title>
 
     <!-- Regular comment -->
     <![CDATA[ This is CDATA ]]>
 
-    <%-- JSP scriptlet --%>
-    <% out.println("Hello from scriptlet"); %>
+    {% if debug_mode %}
+    <p class="debug-info">Debug mode active - {{ current_time }}</p>
+    {% endif %}
 
     <style>
         /* Full CSS grammar test inside <style> */
 
         @charset "utf-8";
 
-        @import url("theme.css") screen and (min-width: 600px);
+        @import url("{{ theme_url }}") screen and (min-width: 600px);
         @import "mobile.css";
 
         @font-face {
@@ -32,25 +33,7 @@
             to   { transform: translateX(0); }
         }
 
-        @media print and (color) {
-            body { background: white !important; }
-        }
-
-        @page :first {
-            margin: 2in;
-            @top-center { content: "Confidential"; }
-            @bottom-right-corner { content: counter(page); }
-        }
-
-        /* Selectors */
-        div > p.highlight + span::before { content: "→ "; }
-        [data-role~="admin"] { color: red; }
-        input[type^="text"] { border: 1px solid; }
-        a[href$=".pdf"]::after { content: "(PDF)"; }
-        li:nth-child(2n+1) { background: #f0f0f0; }
-        .button:active { transform: scale(0.95); }
-
-        /* Values */
+        /* Some example rules */
         .box {
             width: calc(100% - 20px);
             margin: 0 auto;
@@ -65,20 +48,48 @@
 </head>
 <body style="margin:0; padding:20px; font-family: Arial, sans-serif;">
 
-<h1 class="title" style="color: #3498db; text-align: center;">HTML + CSS Grammar Test</h1>
+<h1 class="title" style="color: #3498db; text-align: center;">
+    {{ page_title|upper }}
+</h1>
 
-<div class="box" style="width:300px; height:200px; background: #e74c3c; animation: slidein 2s infinite;">
+{% if user.is_authenticated %}
+<p>Welcome back, <strong>{{ user.username|capitalize }}</strong>!</p>
+{% else %}
+<p>Please <a href="{{ url_for('login') }}">log in</a> to see personalized content</p>
+{% endif %}
+
+<div class="box">
     This div uses inline style and CSS animation
 </div>
 
+<h2>Recent Items</h2>
+<ul>
+    {% for item in items %}
+    <li class="{% if loop.first %}first-item{% endif %}">
+        {{ item.name }}
+        {% if item.price %}
+        - ${{ item.price|round(2) }}
+        {% endif %}
+        {% if item.in_stock == false %}
+        <span class="out-of-stock">(Out of stock)</span>
+        {% endif %}
+    </li>
+    {% else %}
+    <li>No items found.</li>
+    {% endfor %}
+</ul>
+
 <script>
     console.log("Script block works too");
+    {% if debug_mode %}
+        console.log("Current user:", {{ user|tojson|safe }});
+    {% endif %}
 </script>
 
-<%-- Another scriptlet --%>
-<% if (true) { %>
-<p>Scriptlet inside body</p>
-<% } %>
+{% raw %}
+<!-- This block will be rendered as plain text, Jinja tags inside are ignored -->
+{%if something %} hello {%endif%}
+{% endraw %}
 
 </body>
 </html>

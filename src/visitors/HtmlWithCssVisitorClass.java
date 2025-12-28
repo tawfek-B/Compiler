@@ -74,9 +74,10 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         return ctx.jinjaBlock().accept(this);
     }
 
-//    public ASTNode visitJinjaCommentItem(HTMLWithCSSParser.JinjaCommentItemContext ctx) {
-//        return ctx.jinjaComment().accept(this);
-//    }
+    @Override
+    public ASTNode visitJinjaCommentItem(HTMLWithCSSParser.JinjaCommentItemContext ctx) {
+        return ctx.jinjaComment().accept(this);
+    }
 
     @Override
     public ASTNode visitHtmlElementItem(HTMLWithCSSParser.HtmlElementItemContext ctx) {
@@ -150,8 +151,8 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         Token start = ctx.getStart();
         HtmlTagNode styleTag = new HtmlTagNode("style", start.getLine(), start.getCharPositionInLine());
 
-        if (ctx.stylesheet() != null) {
-            CssDocumentNode cssDoc = (CssDocumentNode) ctx.stylesheet().accept(this);
+        if (ctx.style() != null) {
+            CssDocumentNode cssDoc = (CssDocumentNode) ctx.style().accept(this);
             styleTag.add(cssDoc);
         }
         return styleTag;

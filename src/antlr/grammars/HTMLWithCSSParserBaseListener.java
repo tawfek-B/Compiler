@@ -125,13 +125,13 @@ public class HTMLWithCSSParserBaseListener implements HTMLWithCSSParserListener 
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterJinjaCommfsentItem(HTMLWithCSSParser.JinjaCommfsentItemContext ctx) { }
+	@Override public void enterJinjaCommentItem(HTMLWithCSSParser.JinjaCommentItemContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitJinjaCommfsentItem(HTMLWithCSSParser.JinjaCommfsentItemContext ctx) { }
+	@Override public void exitJinjaCommentItem(HTMLWithCSSParser.JinjaCommentItemContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

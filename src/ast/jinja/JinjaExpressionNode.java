@@ -21,7 +21,7 @@ public class JinjaExpressionNode extends JinjaNode {
 
     @Override
     public String toString() {
-        return "JinjaExpressionNode: " + (expression != null ? expression.getType() : "null");
+        return "JinjaExpressionNode: " + (expression != null ? expression.getClass().getSimpleName() : "null");
     }
 
     @Override

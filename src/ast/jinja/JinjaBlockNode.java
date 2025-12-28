@@ -8,7 +8,7 @@ public class JinjaBlockNode extends JinjaNode {
     private String name;
 
     public JinjaBlockNode(String name, int line, int column) {
-        super("Jinja Block Node", line, column);
+        super("Jinja lol Node", line, column);
         this.name = name;
     }
 
