@@ -1,6 +1,12 @@
 package ast.visitors;
 
 import ast.core.*;
+import ast.css.CssDocumentNode;
+import ast.css.CssRuleNode;
+import ast.html.HtmlDocumentNode;
+import ast.html.HtmlTagNode;
+import ast.jinja.JinjaBlockNode;
+import ast.jinja.JinjaExpressionNode;
 import ast.python.*;
 
 public class PythonBaseASTVisitor<T> implements ASTVisitor<T> {
@@ -166,6 +172,39 @@ public class PythonBaseASTVisitor<T> implements ASTVisitor<T> {
 
     @Override
     public T visit(ContinueNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(ArgumentListNode argumentListNode) {
+        return argumentListNode.accept(this);
+    }
+
+    @Override
+    public T visit(HtmlDocumentNode node) {
+
+        return null;
+    }
+
+    @Override
+    public T visit(JinjaExpressionNode node) {
+
+        return null;
+    }
+
+    @Override
+    public T visit(JinjaBlockNode node) {
+
+        return null;
+    }
+
+    @Override
+    public T visit(HtmlTagNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(CssDocumentNode node) {
         return null;
     }
 

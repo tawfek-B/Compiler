@@ -75,6 +75,12 @@ public class SymbolTable {
         return scopes;
     }
 
+    public void clear() {
+        scopes.clear();                // Remove all scopes and their symbols
+        scopeStack.clear();            // Reset the scope stack
+        enterScope("global");          // Restore the initial global scope
+    }
+
     //Print
 
     public void print() {

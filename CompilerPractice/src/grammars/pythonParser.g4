@@ -11,25 +11,49 @@ program
 statement
     : decorator NEWLINE functionDec             #decorated_LN_Function_Statement
     | decorator functionDec                     #decorated_Function_Statement
+    | importStatement                           #import_Statement
+    | globalStatement                           #global_Statement
     | assignment                                #assign_Statement
     | ifStatement                               #if_Statement
-//    | forStatement                              #for_Statement
+    | forStatement                              #for_Statement
     | whileStatement                            #while_Statement
     | tryStatement                              #try_Statement
-    | forEachStatement                          #for_Each_Statement
-    | functionDec                               #function_Statement
     | returnStatement                           #return_Statement
-    | expr                                      #expression_Statement
+    | breakStatement                            #break_Statement
+    | continueStatement                         #continue_Statement
+    | passStatement                             #pass_Statement
+    | expr SEMICOLON?                           #expression_Statement
+    ;
+
+// Import statements
+importStatement
+    : IMPORT dottedName (AS ID)?                #simpleImport
+    | FROM dottedName IMPORT importNames        #fromImport
+    ;
+
+dottedName
+    : ID (DOT ID)*
+    ;
+
+importNames
+    : MULTIPLY
+    | ID (AS ID)? (COMMA ID (AS ID)?)*
+    ;
+
+// Global statement
+globalStatement
+    : GLOBAL ID (COMMA ID)*
     ;
 
 // Decorators
 decorator
-    : ROUTE LP STRING RP                        #routeDecorator
+    : AT ID (DOT ID)* LP argumentList? RP      #decoratorWithArgs
+    | AT ID LP argumentList? RP                #simpleDecorator
     ;
 
 // Functions
 functionDec
-    : DEF ID LP parameterList? RP COLON block   #functionDeclaration
+    : decorator* DEF ID LP parameterList? RP COLON block   #functionDeclaration
     ;
 
 parameterList
@@ -41,15 +65,33 @@ block
     : INDENT statement+ DEDENT                  #blockStatement
     ;
 
-// Assignment & Return
+// Assignment / Return
 assignment
-    : ID ASSIGN expr                            #assign
+    : ID augAssign expr                         #augmentedAssignment
+    | ID (DOT ID)*  ASSIGN expr                 #assign
+    ;
+
+augAssign
+    : PLUS_EQUAL
+    | MINUS_EQUAL
+    | TIMES_EQUAL
+    | DIVIDE_EQUAL
+    | MODULO_EQUAL
     ;
 
 returnStatement
     : RETURN expr?                              #returnValue
     ;
 
+passStatement
+    : PASS                                      #passBlock
+    ;
+breakStatement
+    : BREAK                                     #breakBlock
+    ;
+continueStatement
+    : CONTINUE                                  #continueBlock
+    ;
 // Conditionals
 ifStatement
     : IF expr COLON block elifStatement* elseStatement?  #ifBlock
@@ -64,20 +106,17 @@ elseStatement
     ;
 
 // Loops
-//forStatement
-//    : FOR ID IN RANGE LP expr COMMA expr (COMMA expr)? RP COLON block     #forLoop
-//    ;
-
-forEachStatement
-    : FOR ID IN expr COLON block elseStatement? #forEachLoop
+forStatement
+    : FOR ID IN expr COLON block elseStatement? #forLoop
     ;
 
 whileStatement
     : WHILE expr COLON block elseStatement?     #whileLoop
     ;
 
+// Try / except / finally
 exceptStatement
-    : EXCEPT expr? COLON block    #exceptBlock
+    : EXCEPT expr? COLON block                  #exceptBlock
     ;
 
 tryStatement
@@ -85,16 +124,42 @@ tryStatement
     ;
 
 finallyStatement
-    : FINALLY COLON block   #finallyBlock
+    : FINALLY COLON block                       #finallyBlock
     ;
 
 // Expressions
 expr
-    : compareExpr
+    : logicalOrExpr
+    ;
+
+logicalOrExpr
+    : logicalAndExpr (OR logicalAndExpr)*           #logicalOrExpression
+    ;
+
+logicalAndExpr
+    : notExpr (AND notExpr)*                        #logicalAndExpression
+    ;
+
+notExpr
+    : NOT notExpr                                   #notExpression
+    | NOT IN compareExpr                            #notInExpression
+    | compareExpr                                   #toComparison
     ;
 
 compareExpr
-    : addExpr ((EQUAL | NOT_EQUAL | GREATER_THAN | LESS_THAN | GREATER_EQUAL | LESS_EQUAL) addExpr)*    #compareExpression
+    : addExpr (compOp addExpr)*                     #compareExpression
+    ;
+
+compOp
+    : IS (NOT)?
+    | NOT IN
+    | IN
+    | EQUAL
+    | NOT_EQUAL
+    | LESS_THAN
+    | GREATER_THAN
+    | LESS_EQUAL
+    | GREATER_EQUAL
     ;
 
 addExpr
@@ -107,14 +172,48 @@ mulExpr
 
 atom
     : LP expr RP                                #parenthesisExpression
+    | atom DOT ID                               #attributeAccess
+    | atom LSB expr RSB                         #subscriptionExpression
+    | atom LP argumentList? RP                  #callExpression
     | listLiteral                               #listExpression
+    | listComp                                  #listCompExpression
+    | generatorExpr                             #generatorAtomExpression
+    | setComp                                   #setCompExpression
+    | dictComp                                  #dictCompExpression
     | dictLiteral                               #dictExpression
-    | functionCall                              #callExpression
     | NUMBER                                    #numberExpression
     | STRING                                    #stringExpression
     | TRUE                                      #trueExpression
     | FALSE                                     #falseExpression
+    | NONE                                      #noneExpression
     | ID                                        #idExpression
+    ;
+
+// functionCall
+//     : ID LP argumentList? RP                    #functionCallExpression
+//     ;
+
+// List comprehension
+// Replace your current listComp rule with these:
+
+comp
+    : FOR ID IN expr (IF expr)?        #comprehension
+    ;
+
+listComp
+    : LSB expr comp+ RSB               #listComprehensionExpression
+    ;
+
+generatorExpr
+    : LP expr comp+ RP                 #generatorExpression
+    ;
+
+setComp
+    : LCB expr comp+ RCB               #setComprehensionExpression
+    ;
+
+dictComp
+    : LCB pair comp+ RCB               #dictComprehensionExpression
     ;
 
 // Function Calls
@@ -123,7 +222,12 @@ functionCall
     ;
 
 argumentList
-    : expr (COMMA expr)*                        #argumentListExpression
+    : argument (COMMA argument)*                #argumentListExpression
+    ;
+
+argument
+    : expr                                      #positionalArgument
+    | ID ASSIGN expr                            #keywordArgument
     ;
 
 // Literals
@@ -136,5 +240,5 @@ dictLiteral
     ;
 
 pair
-    : ID COLON expr                             #dictPairExpression
+    : (ID | STRING) COLON expr                  #dictPairExpression
     ;

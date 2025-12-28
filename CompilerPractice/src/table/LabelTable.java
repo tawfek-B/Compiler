@@ -22,6 +22,16 @@ public class LabelTable {
         return label;
     }
 
+    public String generateBlockLabel(String blockName) {
+        String key = "block:" + blockName;
+        return labels.computeIfAbsent(key, k -> "BLOCK_" + counter++);
+    }
+
+    public void clear() {
+        labels.clear();
+        counter = 0;
+    }
+
     public String getLabel(SymbolRow symbol) {
         return labels.get(symbol.getQualifiedName());
     }

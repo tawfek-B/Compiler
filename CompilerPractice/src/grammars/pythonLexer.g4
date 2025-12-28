@@ -2,49 +2,62 @@ lexer grammar pythonLexer;
 
 tokens { INDENT, DEDENT }
 
-@members {
-    private java.util.Stack<Integer> indents = new java.util.Stack<>();
-    private java.util.LinkedList<Token> pendingTokens = new java.util.LinkedList<>();
-    private int lastIndent = 0;
+@lexer::members {
+    private java.util.ArrayDeque<Integer> indents = new java.util.ArrayDeque<>();
+    private java.util.LinkedList<Token> pending = new java.util.LinkedList<>();
+    private int opened = 0;
 
     @Override
     public Token nextToken() {
-        if (!pendingTokens.isEmpty()) {
-            return pendingTokens.poll();
-        }
-
-        Token next = super.nextToken();
-
-        if (next.getType() == EOF) {
+        // EOF handling - emit remaining dedents
+        if (_input.LA(1) == EOF && !indents.isEmpty()) {
+            if (pending.isEmpty()) {
+                pending.add(new CommonToken(NEWLINE, "\n"));
+            }
             while (!indents.isEmpty()) {
                 indents.pop();
-                pendingTokens.add(new CommonToken(DEDENT));
+                pending.add(new CommonToken(DEDENT, ""));
             }
-            pendingTokens.add(next); // EOF
-            return pendingTokens.poll();
+            pending.add(new CommonToken(EOF, "<EOF>"));
         }
 
-        return next;
+        if (!pending.isEmpty()) {
+            return pending.poll();
+        }
+
+        return super.nextToken();
     }
 }
 
 // Keywords
-DEF     : 'def';
-RETURN  : 'return';
-IF      : 'if';
-ELIF    : 'elif';
-ELSE    : 'else';
-WHILE   : 'while';
-TRY     : 'try';
-FINALLY : 'finally';
-EXCEPT  : 'except';
-FOR     : 'for';
-IN      : 'in';
-TRUE    : 'true';
-FALSE   : 'false';
-RANGE   : 'range';
+DEF         : 'def';
+RETURN      : 'return';
+BREAK       : 'break';
+PASS        : 'pass';
+CONTINUE    : 'continue';
+IF          : 'if';
+ELIF        : 'elif';
+ELSE        : 'else';
+WHILE       : 'while';
+TRY         : 'try';
+FINALLY     : 'finally';
+EXCEPT      : 'except';
+FOR         : 'for';
+IN          : 'in';
+TRUE        : 'true';
+FALSE       : 'false';
+RANGE       : 'range';
+IMPORT      : 'import';
+FROM        : 'from';
+AS          : 'as';
+GLOBAL      : 'global';
+NONE        : 'None';
+IS          : 'is';
+OR          : 'or';
+AND         : 'and';
+NOT         : 'not';
 
-ROUTE   : '@route';
+AT          : '@';
 
 // Operators & Symbols
 ASSIGN          : '=';
@@ -54,6 +67,12 @@ MULTIPLY        : '*';
 DIVIDE          : '/';
 MODIFY          : '%';
 
+PLUS_EQUAL      : '+=';
+MINUS_EQUAL      : '-=';
+TIMES_EQUAL      : '*=';
+DIVIDE_EQUAL      : '/=';
+MODULO_EQUAL      : '%=';
+
 EQUAL           : '==';
 NOT_EQUAL       : '!=';
 GREATER_EQUAL   : '>=';
@@ -61,12 +80,12 @@ LESS_EQUAL      : '<=';
 GREATER_THAN    : '>';
 LESS_THAN       : '<';
 
-LP  : '(';
-RP  : ')';
-LSB : '[';
-RSB : ']';
-LCB : '{';
-RCB : '}';
+LP  : '(' { opened++; } ;
+RP  : ')' { opened--; } ;
+LSB : '[' { opened++; } ;
+RSB : ']' { opened--; } ;
+LCB : '{' { opened++; } ;
+RCB : '}' { opened--; } ;
 COLON : ':';
 COMMA : ',';
 SEMICOLON : ';';
@@ -88,62 +107,41 @@ ID
     : [a-zA-Z_][a-zA-Z_0-9]*
     ;
 
-// New line with Indentation
+// New line
+
 NEWLINE
-    : ('\r'? '\n')+
+    : '\r'? '\n' (' ' | '\t')*
       {
-        int indent = 0;
-        int la = _input.LA(1);
+          String text = getText();
+          int nlLen = text.indexOf('\n') + 1;
+          int indent = text.length() - nlLen;
 
-        while (la == ' ' || la == '\t') {
-            indent += (la == '\t') ? 4 : 1;
-            _input.consume();
-            la = _input.LA(1);
-        }
+          if (opened > 0 || indent == 0) {
+              // Continuation line or blank line → no indent token
+              skip();
+          } else {
+              // Emit NEWLINE to hidden channel
+              emit(new CommonToken(NEWLINE, "\n"));
 
-        // Create tokens with proper line and column (copy from current NEWLINE token)
-        CommonToken indentToken;
-        CommonToken newlineToken = new CommonToken(NEWLINE);
-        newlineToken.setLine(getLine());
-        newlineToken.setCharPositionInLine(getCharPositionInLine());
+              int prev = indents.isEmpty() ? 0 : indents.peekFirst();
 
-        if (indent > lastIndent) {
-            indents.push(indent);
-            lastIndent = indent;
-
-            indentToken = new CommonToken(INDENT);
-            indentToken.setLine(getLine() + 1);
-            indentToken.setCharPositionInLine(0);
-            pendingTokens.add(indentToken);
-        } else {
-            while (!indents.isEmpty() && indent < lastIndent) {
-                indents.pop();
-
-                indentToken = new CommonToken(DEDENT);
-                indentToken.setLine(getLine());
-                indentToken.setCharPositionInLine(-1);
-                pendingTokens.add(indentToken);
-
-                lastIndent = indents.isEmpty() ? 0 : indents.peek();
-            }
-        }
-
-        pendingTokens.add(newlineToken);
+              if (indent > prev) {
+                  indents.push(indent);
+                  emit(new CommonToken(INDENT, " ".repeat(indent)));
+              } else if (indent < prev) {
+                  while (!indents.isEmpty() && indent < indents.peekFirst()) {
+                      indents.pop();
+                      emit(new CommonToken(DEDENT, ""));
+                  }
+              }
+              // equal indent → nothing
+          }
       }
+      -> channel(HIDDEN)
     ;
+
 // Skipped
-COMMENT
-    : '#' ~[\r\n]* -> skip
-    ;
-
-MULTILINE_COMMENT
-    : '"""' .*? '"""' -> skip
-    ;
-
-MULTILINE_STRING
-    : '"""' .*? '"""' -> skip
-    ;
-
-WS
-    : [ \t]+ -> skip
-    ;
+COMMENT           : '#' ~[\r\n]* -> skip;
+MULTILINE_COMMENT : '"""' .*? '"""' -> skip;
+MULTILINE_STRING  : '"""' .*? '"""' -> skip;
+WS                : [ \t]+ -> skip;

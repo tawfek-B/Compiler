@@ -1,6 +1,14 @@
 package visitors;
 
 import ast.core.*;
+import ast.css.CssDocumentNode;
+import ast.css.CssNode;
+import ast.css.CssRuleNode;
+import ast.css.CssSelectorNode;
+import ast.html.HtmlDocumentNode;
+import ast.html.HtmlTagNode;
+import ast.jinja.JinjaBlockNode;
+import ast.jinja.JinjaExpressionNode;
 import ast.python.*;
 import table.*;
 
@@ -68,7 +76,7 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
             );
         }
 
-        if (node.getBody() != null ) {
+        if (node.getBody() != null) {
 
             node.getBody().accept(this);
         }
@@ -263,31 +271,194 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
         return null;
     }
 
-    @Override public Void visit(IdentifierNode node) { return null; }
-    @Override public Void visit(NumberLiteralNode node) { return null; }
-    @Override public Void visit(StringLiteralNode node) { return null; }
-    @Override public Void visit(BooleanLiteralNode node) { return null; }
+    @Override
+    public Void visit(IdentifierNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(NumberLiteralNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(StringLiteralNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(BooleanLiteralNode node) {
+        return null;
+    }
 
     @Override
     public Void visit(NullLiteralNode node) {
         return null;
     }
 
-    @Override public Void visit(ListNode node) { return null; }
-    @Override public Void visit(DictNode node) { return null; }
-    @Override public Void visit(KeyValueNode node) { return null; }
-    @Override public Void visit(ReturnNode node) { return null; }
+    @Override
+    public Void visit(ListNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(DictNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(KeyValueNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ReturnNode node) {
+        return null;
+    }
 
     @Override
     public Void visit(ExpressionNode node) {
         return null;
     }
 
-    @Override public Void visit(BreakNode node) { return null; }
-    @Override public Void visit(ContinueNode node) { return null; }
+    @Override
+    public Void visit(BreakNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ContinueNode node) {
+        return null;
+    }
 
     @Override
     public Void visit(ArgumentListNode argumentListNode) {
         return null;
+    }
+
+    @Override
+    public Void visit(HtmlDocumentNode node) {
+
+        for (ASTNode child : node.getChildren()) {
+            child.accept(this);
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void visit(JinjaBlockNode node) {
+        String blockName = node.getName();
+
+        if (!node.getName().equals("end")) {
+            // Generate label only if not already generated
+            String blockLabel = labelTable.generateBlockLabel(blockName);
+
+            symbolTable.addSymbol(
+                    blockName,
+                    "jinja_block",
+                    blockLabel,
+                    node.getLine(),
+                    node.getColumn()
+            );
+
+            symbolTable.enterScope("jinja_block_" + blockName);
+
+            for (ASTNode child : node.getChildren()) {
+                child.accept(this);
+            }
+
+            symbolTable.exitScope();
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void visit(CssDocumentNode node) {
+        // Traverse general children (CDO, CDC, text, etc.)
+        for (CssRuleNode child : node.getRules()) {
+            child.accept(this);
+            for (CssSelectorNode sel : child.getSelectors()) {  // assuming you have getSelectors()
+                String selText = sel.getSelector().trim();
+                if (selText.startsWith(".")) {
+                    String className = selText.substring(1);
+                    symbolTable.addSymbol(
+                            className,
+                            "css_class",
+                            String.valueOf(child.getDeclarations().size()) + " declarations",
+                            sel.getLine(),
+                            sel.getColumn()
+                    );
+                } else {
+                    symbolTable.addSymbol(
+                            selText,
+                            "css_selector",
+                            String.valueOf(child.getDeclarations().size()) + " declarations",
+                            sel.getLine(),
+                            sel.getColumn()
+                    );
+                }
+            }
+        }
+
+        // IMPORTANT: Also traverse the specific rules list
+        for (CssRuleNode rule : node.getRules()) {  // assuming you have getRules() method
+            rule.accept(this);
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void visit(HtmlTagNode node) {
+        // Optional debug: System.out.println("Visiting HTML tag: " + node.getTagName());
+
+        // IMPORTANT: Recurse into all children (attributes, content, CSS document, etc.)
+        for (ASTNode child : node.getChildren()) {
+            child.accept(this);
+        }
+
+        return null;
+    }
+
+    // 2. Visit Jinja Expression (e.g. {{ product.name }}, {{ url_for('...') }})
+    @Override
+    public Void visit(JinjaExpressionNode node) {
+        // Recurse into the parsed expression to collect variables/functions
+        if (node.getExpression() != null) {
+            collectJinjaVariables(node.getExpression(), node.getLine(), node.getColumn());
+        }
+        return null;
+    }
+
+    private void collectJinjaVariables(ASTNode expr, int line, int column) {
+        if (expr == null) return;
+
+        if (expr instanceof IdentifierNode id) {
+            symbolTable.addSymbol(id.getName(), "jinja_variable", null, line, column);
+        } else if (expr instanceof BinaryExpressionNode bin) {
+            // Dot access: product.name → collect "product"
+            if (bin.getOperator().equals(".")) {
+                collectJinjaVariables(bin.getLeft(), line, column);
+            }
+            // Filter: "%.2f"|format → collect "format" if it's a call
+            else if (bin.getOperator().equals("|")) {
+                collectJinjaVariables(bin.getRight(), line, column);
+            }
+            collectJinjaVariables(bin.getLeft(), line, column);
+            collectJinjaVariables(bin.getRight(), line, column);
+        } else if (expr instanceof CallExpressionNode call) {
+            if (call.getCallee() instanceof IdentifierNode funcId) {
+                symbolTable.addSymbol(funcId.getName(), "jinja_function", null, line, column);
+            }
+            for (ExpressionNode arg : call.getArguments()) {
+                collectJinjaVariables(arg, line, column);
+            }
+        } else {
+            for (ASTNode child : expr.getChildren()) {
+                collectJinjaVariables(child, line, column);
+            }
+        }
     }
 }
