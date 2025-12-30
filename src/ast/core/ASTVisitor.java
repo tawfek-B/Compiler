@@ -1,5 +1,11 @@
 package ast.core;
 
+import ast.css.CssDocumentNode;
+import ast.css.CssRuleNode;
+import ast.html.HtmlDocumentNode;
+import ast.html.HtmlTagNode;
+import ast.jinja.JinjaBlockNode;
+import ast.jinja.JinjaExpressionNode;
 import ast.python.*;
 
 public interface ASTVisitor<T> {
@@ -45,5 +51,5 @@ public interface ASTVisitor<T> {
     T visit(LogicalExpressionNode node);
     T visit(BreakNode node);
     T visit(ContinueNode node);
-
+    T visit(ArgumentListNode argumentListNode);
 }

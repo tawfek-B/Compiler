@@ -15,7 +15,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        String filePath = "C:\\Users\\Asus\\ANTLR\\CompilerPractice\\src\\test\\test.html";
+        String filePath = "C:\\Users\\hp\\ANTLR\\CompilerPractice\\src\\test\\test.html";
         String template = Files.readString(Paths.get(filePath));
 
         var lexer = new HTMLWithCSSLexer(CharStreams.fromString(template));

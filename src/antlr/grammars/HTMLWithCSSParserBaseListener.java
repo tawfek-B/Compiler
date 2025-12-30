@@ -149,6 +149,18 @@ public class HTMLWithCSSParserBaseListener implements HTMLWithCSSParserListener 
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterTopLevelTextItem(HTMLWithCSSParser.TopLevelTextItemContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTopLevelTextItem(HTMLWithCSSParser.TopLevelTextItemContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterHtmlPairedTag(HTMLWithCSSParser.HtmlPairedTagContext ctx) { }
 	/**
 	 * {@inheritDoc}

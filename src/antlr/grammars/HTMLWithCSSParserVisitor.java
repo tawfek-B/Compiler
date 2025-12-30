@@ -87,6 +87,13 @@ public interface HTMLWithCSSParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitHtmlElementItem(HTMLWithCSSParser.HtmlElementItemContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code topLevelTextItem}
+	 * labeled alternative in {@link HTMLWithCSSParser#documentItem}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTopLevelTextItem(HTMLWithCSSParser.TopLevelTextItemContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code htmlPairedTag}
 	 * labeled alternative in {@link HTMLWithCSSParser#htmlElement}.
 	 * @param ctx the parse tree

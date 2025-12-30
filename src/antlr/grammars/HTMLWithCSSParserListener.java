@@ -138,6 +138,18 @@ public interface HTMLWithCSSParserListener extends ParseTreeListener {
 	 */
 	void exitHtmlElementItem(HTMLWithCSSParser.HtmlElementItemContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code topLevelTextItem}
+	 * labeled alternative in {@link HTMLWithCSSParser#documentItem}.
+	 * @param ctx the parse tree
+	 */
+	void enterTopLevelTextItem(HTMLWithCSSParser.TopLevelTextItemContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code topLevelTextItem}
+	 * labeled alternative in {@link HTMLWithCSSParser#documentItem}.
+	 * @param ctx the parse tree
+	 */
+	void exitTopLevelTextItem(HTMLWithCSSParser.TopLevelTextItemContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code htmlPairedTag}
 	 * labeled alternative in {@link HTMLWithCSSParser#htmlElement}.
 	 * @param ctx the parse tree

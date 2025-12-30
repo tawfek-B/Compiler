@@ -22,9 +22,7 @@ public abstract class ASTNode {
         this.column = column;
     }
 
-    public String getType() {
-        return type;
-    }
+
 
     public void add(ASTNode child) {
         if (child != null) {
@@ -34,6 +32,10 @@ public abstract class ASTNode {
 
     public List<ASTNode> getChildren() {
         return children;
+    }
+
+    public String getType() {
+        return type;
     }
 
     public int getLine() {

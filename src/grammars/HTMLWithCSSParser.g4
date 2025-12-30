@@ -17,6 +17,7 @@ documentItem
     | jinjaBlock                                        # jinjaBlockItem
     | jinjaComment                                      # jinjaCommentItem
     | htmlElement                                       # htmlElementItem
+    | htmlChardata                                      # topLevelTextItem
     ;
 
 htmlElement
@@ -123,11 +124,11 @@ combined_selector
     ;
 
 combinator
-    : GREATER S* | PLUS S* | TILDE S* | S+
+    : GREATER S* | PLUS S* | TILDE S* | S*
     ;
 
 selector
-    : (IDENT | ASTERISK) selpart* S*
+    : (IDENT | S | ASTERISK) selpart* S*
     | selpart+ S*
     ;
 
