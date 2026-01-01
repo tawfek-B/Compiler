@@ -21,6 +21,10 @@ public class HtmlTagNode extends HtmlNode {
         add(attribute); // add to children
     }
 
+    public String getTagName() {
+        return tagName;
+    }
+
     public List<ASTNode> getChildren() {
         return super.getChildren(); // already includes attributes + body
     }

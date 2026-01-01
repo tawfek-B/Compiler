@@ -406,6 +406,15 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
     }
 
     @Override
+    public ASTNode visitNoneExpression(pythonParser.NoneExpressionContext ctx) {
+        return new NoneLiteralNode(
+                ctx.start.getLine(),
+                ctx.start.getCharPositionInLine()
+        );
+    }
+
+
+    @Override
     public ASTNode visitListComprehensionExpression(pythonParser.ListComprehensionExpressionContext ctx) {
         // The expression that gets evaluated for each item: [ <this> for ... ]
         ExpressionNode resultExpr = (ExpressionNode) visit(ctx.expr());

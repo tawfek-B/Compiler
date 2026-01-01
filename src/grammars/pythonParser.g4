@@ -62,7 +62,7 @@ parameterList
 
 // Blocks
 block
-    : INDENT statement+ DEDENT                  #blockStatement
+    : statement+                   #blockStatement
     ;
 
 // Assignment / Return
@@ -142,7 +142,7 @@ logicalAndExpr
 
 notExpr
     : NOT notExpr                                   #notExpression
-    | NOT IN compareExpr                            #notInExpression         // optional but nice
+    | NOT IN compareExpr                            #notInExpression
     | compareExpr                                   #toComparison
     ;
 
@@ -178,8 +178,8 @@ atom
     | listLiteral                               #listExpression
     | listComp                                  #listCompExpression
     | generatorExpr                             #generatorAtomExpression
-    | setComp                                   #setCompExpression            // optional
-    | dictComp                                  #dictCompExpression           // optional
+    | setComp                                   #setCompExpression
+    | dictComp                                  #dictCompExpression
     | dictLiteral                               #dictExpression
     | NUMBER                                    #numberExpression
     | STRING                                    #stringExpression
@@ -189,7 +189,6 @@ atom
     | ID                                        #idExpression
     ;
 
-// Remove or comment out these rules completely:
 // functionCall
 //     : ID LP argumentList? RP                    #functionCallExpression
 //     ;
@@ -210,11 +209,11 @@ generatorExpr
     ;
 
 setComp
-    : LCB expr comp+ RCB               #setComprehensionExpression     // optional
+    : LCB expr comp+ RCB               #setComprehensionExpression
     ;
 
 dictComp
-    : LCB pair comp+ RCB               #dictComprehensionExpression    // optional
+    : LCB pair comp+ RCB               #dictComprehensionExpression
     ;
 
 // Function Calls

@@ -12,6 +12,10 @@ public class HtmlDoctypeNode extends HtmlNode {
         this.text = text;
     }
 
+    public String getText() {
+        return text;
+    }
+
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
         return null;

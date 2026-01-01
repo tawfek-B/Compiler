@@ -2,13 +2,20 @@ package app;
 
 import antlr.grammars.HTMLWithCSSLexer;
 import antlr.grammars.HTMLWithCSSParser;
-import ast.core.ASTNode;
+import antlr.grammars.pythonLexer;
+import antlr.grammars.pythonParser;
+import ast.core.*;
 import ast.css.*;
+import ast.html.*;
+import ast.jinja.JinjaBlockNode;
+import ast.jinja.JinjaExpressionNode;
+import ast.python.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import table.LabelTable;
 import table.SymbolTable;
 import visitors.HtmlWithCssVisitorClass;
+import visitors.PythonASTBuilderVisitor;
 import visitors.SymbolTableVisitor;
 
 import java.io.IOException;
@@ -44,10 +51,24 @@ public class Main {
             }
         }
 
+        // Split files by type
+        List<Path> pyFiles = allFiles.stream()
+                .filter(p -> p.toString().toLowerCase().endsWith(".py"))
+                .toList();
+
         List<Path> htmlFiles = allFiles.stream()
                 .filter(p -> p.toString().toLowerCase().endsWith(".html"))
                 .toList();
 
+        // 1. Process all Python files first
+        if (!pyFiles.isEmpty()) {
+            System.out.println("\n=== Processing Python Files First ===");
+            for (Path py : pyFiles) {
+                processSingleFile(py);
+            }
+        }
+
+        // 2. Then process all HTML files
         if (!htmlFiles.isEmpty()) {
             System.out.println("\n=== Processing HTML/Jinja Files ===");
             for (Path html : htmlFiles) {
@@ -66,7 +87,9 @@ public class Main {
             CharStream input = CharStreams.fromPath(filePath);
             ASTNode ast = null;
 
-            if (fileName.toLowerCase().endsWith(".html")) {
+            if (fileName.toLowerCase().endsWith(".py")) {
+                ast = processPythonFile(input);
+            } else if (fileName.toLowerCase().endsWith(".html")) {
                 ast = processHtmlFile(input);
                 printCssDetails(ast, fileName);
             } else {
@@ -76,7 +99,7 @@ public class Main {
 
             if (ast != null) {
                 System.out.println("AST:");
-                printAst(ast, "");
+                printAst(ast);
             }
 
             System.out.println("Done.");
@@ -107,17 +130,148 @@ public class Main {
 
         return ast;
     }
-    private static void printAst(ASTNode node, String indent) {
+
+    private static ASTNode processPythonFile(CharStream input) {
+        pythonLexer lexer = new pythonLexer(input);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        pythonParser parser = new pythonParser(tokens);
+        parser.removeErrorListeners();
+        ParseTree tree = parser.program();
+        PythonASTBuilderVisitor builder = new PythonASTBuilderVisitor();
+        ASTNode ast = builder.visit(tree);
+
+        // Reset tables for each Python file
+        symbolTable.clear();
+        labelTable.clear();
+        ast.accept(new SymbolTableVisitor(symbolTable, labelTable));
+
+        System.out.println("\nSymbol Table:");
+        symbolTable.print();
+
+        System.out.println("\nLabel Table:");
+        labelTable.print();
+
+        return ast;
+    }
+
+    private static void printAst(ASTNode node) {
+        printAst(node, "", true);
+    }
+    private static void printAst(ASTNode node, String prefix, boolean isLast) {
         if (node == null) return;
 
-        String type = node.getClass().getSimpleName();
-        System.out.println(indent + type + " (line " + node.getLine() +
-                ", col " + node.getColumn() + ")");
+        String connector = isLast ? "└─ " : "├─ ";
+        String label = formatNode(node);
 
-        for (ASTNode child : node.getChildren()) {
-            printAst(child, indent + "  ");
+        String base = prefix + connector + label;
+        int dotsNeeded = Math.max(1, 140 - base.length());
+        String dots = ".".repeat(dotsNeeded);
+
+        System.out.println(
+                base + "        " + dots + "(line " + node.getLine() + ", col " + node.getColumn() + ")"
+        );
+
+        List<ASTNode> children = node.getChildren();
+        for (int i = 0; i < children.size(); i++) {
+            boolean last = (i == children.size() - 1);
+            printAst(
+                    children.get(i),
+                    prefix + (isLast ? "   " : "│  "),
+                    last
+            );
         }
     }
+
+    private static String formatNode(ASTNode node) {
+
+        // HTML
+        if (node instanceof HtmlDocumentNode) {
+            return "HtmlDocument";
+        }
+
+        if (node instanceof HtmlDoctypeNode d) {
+            return "Doctype: " + d.getText();
+        }
+
+        if (node instanceof HtmlTagNode t) {
+            return "<" + t.getTagName() + ">";
+        }
+
+        if (node instanceof HtmlAttributeNode a) {
+            return "ATTRIBUTE\t" + a.getName() +
+                    (a.getValue() != null && !a.getValue().isEmpty()
+                            ? ": " + a.getValue()
+                            : "");
+        }
+
+        if (node instanceof HtmlTextNode) {
+            return "TEXT";
+        }
+
+        if (node instanceof HtmlCommentNode c) {
+            return "COMMENT: " + c.getComment();
+        }
+
+        // Jinja
+        if (node instanceof JinjaBlockNode j) {
+            return "JINJA block: " + j.getName();
+        }
+
+        if (node instanceof JinjaExpressionNode) {
+            return "JINJA expression";
+        }
+
+        // CSS
+        if (node instanceof CssDocumentNode) {
+            return "CSS Document (Check printCssDetails() output above)";
+        }
+
+        // Python
+        if (node instanceof FunctionDefNode fn) {
+            String params = fn.getParameters().stream()
+                    .map(ParameterNode::getName)
+                    .collect(Collectors.joining(", "));
+            return "Function Definition: " + fn.getName() + "(" + params + ")";
+        }
+
+
+        if (node instanceof ParameterNode) {
+            return "Parameter: " +  ((ParameterNode) node).getName();
+        }
+
+        if (node instanceof ComparisonNode c) {
+            return "Comparison: " + c.getOperator();
+        }
+
+        if (node instanceof DecoratorNode d) {
+            return "Decorator: @" + d.getExpression();
+        }
+
+
+        // Core
+        if(node instanceof IdentifierNode) {
+            return "Identifier: " + ((IdentifierNode) node).getName();
+        }
+
+        if(node instanceof StringLiteralNode) {
+            return "String: " + ((StringLiteralNode) node).getValue();
+        }
+
+        if(node instanceof NumberLiteralNode) {
+            return "Number: " + ((NumberLiteralNode) node).getValue();
+        }
+
+        if(node instanceof BooleanLiteralNode) {
+            return "Boolean: " + ((BooleanLiteralNode) node).getValue();
+        }
+
+        if(node instanceof NoneLiteralNode) {
+            return "None";
+        }
+
+        return node.getClass().getSimpleName();
+    }
+
 
     private static void printCssDetails(ASTNode node, String fileName) {
         boolean[] found = {false};

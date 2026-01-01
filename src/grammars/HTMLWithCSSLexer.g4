@@ -14,7 +14,7 @@ STYLE_OPEN            : '<style' (~'>')* '>' -> pushMode(STYLE) ;
 
 // tokens
 HTML_COMMENT          : '<!--' .*? '-->' ;
-HTML_CONDITIONAL_COMMENT : '<![CDATA[' .*? ']]>' | '<!' (~'>')* '>' ;
+HTML_CONDITIONAL_COMMENT : '<![CDATA[' .*? ']]>' | '<!' ~[D] (~'>')* '>' ;
 XML                   : '<?xml' .*? '>' ;
 CDATA                 : '<![CDATA[' .*? ']]>' ;
 DTD                   : '<!DOCTYPE' .*? '>' ;

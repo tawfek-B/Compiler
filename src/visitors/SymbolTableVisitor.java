@@ -61,9 +61,7 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
                 node.getLine(),
                 node.getColumn()
         );
-
         labelTable.generateLabel(functionSymbol);
-
         symbolTable.enterScope(node.getName());
 
         for (ParameterNode param : node.getParameters()) {
@@ -75,9 +73,7 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
                     param.getColumn()
             );
         }
-
         if (node.getBody() != null) {
-
             node.getBody().accept(this);
         }
         symbolTable.exitScope();
@@ -377,9 +373,12 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
     @Override
     public Void visit(CssDocumentNode node) {
         // Traverse general children (CDO, CDC, text, etc.)
+
+        symbolTable.enterScope("CSS Stylesheet");
+
         for (CssRuleNode child : node.getRules()) {
             child.accept(this);
-            for (CssSelectorNode sel : child.getSelectors()) {  // assuming you have getSelectors()
+            for (CssSelectorNode sel : child.getSelectors()) {
                 String selText = sel.getSelector().trim();
                 if (selText.startsWith(".")) {
                     String className = selText.substring(1);
@@ -401,12 +400,11 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
                 }
             }
         }
+        symbolTable.exitScope();
 
-        // IMPORTANT: Also traverse the specific rules list
         for (CssRuleNode rule : node.getRules()) {  // assuming you have getRules() method
             rule.accept(this);
         }
-
         return null;
     }
 
