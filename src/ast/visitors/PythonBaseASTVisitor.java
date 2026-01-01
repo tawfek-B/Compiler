@@ -180,6 +180,34 @@ public class PythonBaseASTVisitor<T> implements ASTVisitor<T> {
         return argumentListNode.accept(this);
     }
 
+    @Override
+    public T visit(HtmlDocumentNode node) {
+
+        return null;
+    }
+
+    @Override
+    public T visit(JinjaExpressionNode node) {
+
+        return null;
+    }
+
+    @Override
+    public T visit(JinjaBlockNode node) {
+
+        return null;
+    }
+
+    @Override
+    public T visit(HtmlTagNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(CssDocumentNode node) {
+        return null;
+    }
+
 
     //  helper
 

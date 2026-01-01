@@ -10,6 +10,8 @@ import ast.jinja.*;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.antlr.v4.runtime.ParserRuleContext;
+import table.LabelTable;
+import table.SymbolTable;
 
 import java.util.List;
 
@@ -151,10 +153,19 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         Token start = ctx.getStart();
         HtmlTagNode styleTag = new HtmlTagNode("style", start.getLine(), start.getCharPositionInLine());
 
-        if (ctx.style() != null) {
-            CssDocumentNode cssDoc = (CssDocumentNode) ctx.style().accept(this);
-            styleTag.add(cssDoc);
+        // The key change: use ctx.stylesheet() instead of ctx.style()
+        if (ctx.stylesheet() != null) {
+            ASTNode cssContent = ctx.stylesheet().accept(this);
+            if (cssContent instanceof CssDocumentNode cssDoc) {
+                styleTag.add(cssDoc);
+            } else if (cssContent != null) {
+                System.err.println("Warning: Unexpected CSS content type: " + cssContent.getClass().getSimpleName());
+                styleTag.add(cssContent);
+            }
+        } else {
+            System.err.println("Warning: No stylesheet content inside <style> at line " + start.getLine());
         }
+
         return styleTag;
     }
 
@@ -168,7 +179,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         for (HTMLWithCSSParser.StatementContext stmt : ctx.statement()) {
             ASTNode node = stmt.accept(this);
 
-            if (node instanceof CssNode cssNode) {
+            if (node instanceof CssRuleNode cssNode) {
                 doc.addRule(cssNode);
             } else if (node != null) {
                 doc.add(node);
@@ -181,11 +192,21 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
     @Override
     public ASTNode visitRuleset(HTMLWithCSSParser.RulesetContext ctx) {
         CssRuleNode rule = new CssRuleNode(ctx.start.getLine(), ctx.getStart().getCharPositionInLine());
-
+        StringBuilder selectorText = new StringBuilder();
+        if(ctx.combined_selector(0) != null && ctx.combined_selector(0).selector(0) != null && ctx.combined_selector(0).selector(0).selpart(0) != null)
+            selectorText = new StringBuilder(ctx.combined_selector(0).selector(0).selpart(0).CLASSKEYWORD().getText());
+        else
+            selectorText = new StringBuilder(ctx.combined_selector(0).selector(0).getText());   //this will fix any selectors that don't have . like body
         // Selectors
-        for (var selCtx : ctx.combined_selector()) {
-            String selectorText = selCtx.getText();
-            CssSelectorNode selectorNode = new CssSelectorNode(selectorText, selCtx.start.getLine(),  selCtx.start.getCharPositionInLine());
+        for (HTMLWithCSSParser.Combined_selectorContext selCtx : ctx.combined_selector()) {
+            if(selCtx.selector(0) != null && selCtx.selector(0).selpart(0) != null && selCtx.selector(0).selpart(0).CLASSKEYWORD() != null) {
+                for(int i = 1; i < selCtx.selector().size(); i++) {
+                    if(selCtx.selector(i) != null)
+                        selectorText.append(" ").append(selCtx.selector(i).getText());
+                }
+            }
+
+            CssSelectorNode selectorNode = new CssSelectorNode(selectorText.toString(), selCtx.start.getLine(),  selCtx.start.getCharPositionInLine());
             rule.addSelector(selectorNode);
         }
 
@@ -312,6 +333,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         // example: "user.name + 'hello' > 5" or "products|length > 0" or "item.price"
         rawExpr = rawExpr.trim();
 
+
         if (rawExpr.contains(" + ")) {
             String[] parts = rawExpr.split("\\s*\\+\\s*", 2);
             ExpressionNode left = parseSimpleTerm(parts[0], line, column);
@@ -327,11 +349,16 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         }
 
         // user.name
-        if (rawExpr.contains(".")) {
-            String[] parts = rawExpr.split("\\.", 2);
-            ExpressionNode left = parseSimpleTerm(parts[0], line, column);
-            ExpressionNode right = new IdentifierNode(parts[1], line, column);
-            return new BinaryExpressionNode(left, ".", right, line, column);
+//        if (rawExpr.contains(".")) {
+//            System.out.println("LOL");
+//            System.out.println(rawExpr);
+//            String[] parts = rawExpr.split("\\.", 2);
+//            ExpressionNode left = parseSimpleTerm(parts[0], line, column);
+//            ExpressionNode right = new IdentifierNode(parts[1], line, column);
+//            return new BinaryExpressionNode(left, ".", right, line, column);
+//        }
+        if(rawExpr.contains(".")) {
+            return new IdentifierNode(rawExpr, line, column);
         }
 
         // identifiers, strings, numbers
@@ -340,6 +367,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
 
     private ExpressionNode parseSimpleTerm(String term, int line, int column) {
         term = term.trim();
+
 
         if (term.startsWith("'") || term.startsWith("\"")) {
             // String literal
@@ -378,7 +406,31 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
     @Override
     public ASTNode visitJinjaBlockTag(HTMLWithCSSParser.JinjaBlockTagContext ctx) {
         Token t = ctx.JINJA_BLOCK_OPEN().getSymbol();
-        return new JinjaBlockNode(ctx.JINJA_BLOCK_CONTENT().getText().trim(), t.getLine(), t.getCharPositionInLine());
+        String rawContent = ctx.JINJA_BLOCK_CONTENT().getText().trim();
+
+        String blockName = "anonymous";
+        // Handle common cases: "block title", "block content", "extends base.html", etc.
+        if (rawContent.startsWith("block ")) {
+            String after = rawContent.substring(6).trim();
+            int space = after.indexOf(' ');
+            blockName = (space != -1) ? after.substring(0, space).trim() : after.trim();
+        } else if (rawContent.startsWith("extends ")) {
+            blockName = "extends_" + rawContent.substring(8).trim().replace("\"", "").replace(".html", "");
+        } else if (rawContent.startsWith("for ")) {
+            blockName = "function_for_" + rawContent.substring(4).trim().replace("\"", "").replace(".html", "").replace(" ", "_");
+        } else if (rawContent.equals("else")) {
+            blockName = "function_else" + rawContent.substring(4).trim().replace("\"", "").replace(".html", "");
+        } else if (rawContent.startsWith("if ")) {
+            blockName =  "function_if_" + rawContent.substring(3).trim().replace("\"", "").replace(".html", "");
+        } else if(rawContent.startsWith("with ")) {
+            blockName = "function_with_" + rawContent.substring(5).trim().replace("\"", "").replace(".html", "").replace(" ", "_");
+        } else if(rawContent.startsWith("endblock") || rawContent.startsWith("endfor") || rawContent.startsWith("endif") || rawContent.startsWith("endwith")) {
+            blockName = "end";
+        }
+
+        JinjaBlockNode node = new JinjaBlockNode(blockName, t.getLine(), t.getCharPositionInLine());
+
+        return node;
     }
 
     @Override

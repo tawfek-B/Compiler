@@ -52,4 +52,10 @@ public interface ASTVisitor<T> {
     T visit(BreakNode node);
     T visit(ContinueNode node);
     T visit(ArgumentListNode argumentListNode);
+
+    T visit(HtmlDocumentNode node);
+    T visit(JinjaExpressionNode node);
+    T visit(JinjaBlockNode node);
+    T visit(CssDocumentNode node);
+    T visit(HtmlTagNode node);
 }

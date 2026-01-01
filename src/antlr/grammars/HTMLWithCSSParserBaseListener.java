@@ -221,18 +221,6 @@ public class HTMLWithCSSParserBaseListener implements HTMLWithCSSParserListener 
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFullStyle(HTMLWithCSSParser.FullStyleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFullStyle(HTMLWithCSSParser.FullStyleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterJinjaExpr(HTMLWithCSSParser.JinjaExprContext ctx) { }
 	/**
 	 * {@inheritDoc}

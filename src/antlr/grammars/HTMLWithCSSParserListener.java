@@ -210,18 +210,6 @@ public interface HTMLWithCSSParserListener extends ParseTreeListener {
 	 */
 	void exitStyleTag(HTMLWithCSSParser.StyleTagContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code fullStyle}
-	 * labeled alternative in {@link HTMLWithCSSParser#style}.
-	 * @param ctx the parse tree
-	 */
-	void enterFullStyle(HTMLWithCSSParser.FullStyleContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code fullStyle}
-	 * labeled alternative in {@link HTMLWithCSSParser#style}.
-	 * @param ctx the parse tree
-	 */
-	void exitFullStyle(HTMLWithCSSParser.FullStyleContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code jinjaExpr}
 	 * labeled alternative in {@link HTMLWithCSSParser#jinjaExpression}.
 	 * @param ctx the parse tree

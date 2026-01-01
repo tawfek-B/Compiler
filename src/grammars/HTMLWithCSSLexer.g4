@@ -151,7 +151,7 @@ CSS_TEXT            : . ;
 
     mode JINJA_RAW;
         JINJA_RAW_END       : '{% endraw %}' -> popMode ;
-        JINJA_RAW_CONTENT  : ~[}]* ('}' ~'}' ~[}]*)* ;
+        JINJA_RAW_CONTENT   : (. | '\n')+? ;
 
 //CSS fragments
 fragment IDENT_MACR     : NAME_START NAME_CHAR* ;

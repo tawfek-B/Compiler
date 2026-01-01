@@ -8,18 +8,18 @@ import java.util.List;
 
 public class CssDocumentNode extends CssNode {
 
-    private List<CssNode> rules = new ArrayList<>();
+    private List<CssRuleNode> rules = new ArrayList<>();
 
     public CssDocumentNode(int line, int column) {
         super("CSS Document Node", line, column);
     }
 
 
-    public void addRule(CssNode rule) {
+    public void addRule(CssRuleNode rule) {
         rules.add(rule);
     }
 
-    public List<CssNode> getRules() {
+    public List<CssRuleNode> getRules() {
         return rules;
     }
 

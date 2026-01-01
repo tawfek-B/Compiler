@@ -129,13 +129,6 @@ public interface HTMLWithCSSParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStyleTag(HTMLWithCSSParser.StyleTagContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code fullStyle}
-	 * labeled alternative in {@link HTMLWithCSSParser#style}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFullStyle(HTMLWithCSSParser.FullStyleContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code jinjaExpr}
 	 * labeled alternative in {@link HTMLWithCSSParser#jinjaExpression}.
 	 * @param ctx the parse tree

@@ -1,17 +1,23 @@
 package app;
 
 import antlr.grammars.*;
+import table.LabelTable;
+import table.SymbolTable;
 import visitors.HtmlWithCssVisitorClass;
 import ast.core.*;
 import ast.html.*;
 import ast.jinja.*;
 import ast.css.*;
 import org.antlr.v4.runtime.*;
+import visitors.SymbolTableVisitor;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class Main {
+
+    private static final SymbolTable symbolTable = new SymbolTable();
+    private static final LabelTable labelTable = new LabelTable();
 
     public static void main(String[] args) throws Exception {
 
@@ -25,6 +31,17 @@ public class Main {
 
         var visitor = new HtmlWithCssVisitorClass();
         ASTNode root = visitor.visit(tree);
+
+
+        symbolTable.clear();
+        labelTable.clear();
+        root.accept(new SymbolTableVisitor(symbolTable, labelTable));
+
+        System.out.println("\nSymbol Table:");
+        symbolTable.print();
+
+        System.out.println("\nLabel Table:");
+        labelTable.print();
 
         System.out.println("=== FULL AST TREE ===");
         printNode(root, "");

@@ -11,6 +11,7 @@ import ast.jinja.JinjaBlockNode;
 import ast.jinja.JinjaExpressionNode;
 import ast.python.*;
 import table.*;
+
 import java.util.UUID;
 
 public class SymbolTableVisitor implements ASTVisitor<Void> {
@@ -333,5 +334,125 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
     @Override
     public Void visit(ArgumentListNode argumentListNode) {
         return null;
+    }
+
+    @Override
+    public Void visit(HtmlDocumentNode node) {
+
+        for (ASTNode child : node.getChildren()) {
+            child.accept(this);
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void visit(JinjaBlockNode node) {
+        String blockName = node.getName();
+
+        if (!node.getName().equals("end")) {
+
+            String blockLabel = labelTable.generateBlockLabel(blockName);
+
+            symbolTable.addSymbol(
+                    blockName,
+                    "jinja_block",
+                    blockLabel,
+                    node.getLine(),
+                    node.getColumn()
+            );
+
+            symbolTable.enterScope("jinja_block_" + blockName);
+
+            for (ASTNode child : node.getChildren()) {
+                child.accept(this);
+            }
+
+            symbolTable.exitScope();
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void visit(CssDocumentNode node) {
+
+        for (CssRuleNode child : node.getRules()) {
+            child.accept(this);
+            for (CssSelectorNode sel : child.getSelectors()) {
+                String selText = sel.getSelector().trim();
+                if (selText.startsWith(".")) {
+                    String className = selText.substring(1);
+                    symbolTable.addSymbol(
+                            className,
+                            "css_class",
+                            String.valueOf(child.getDeclarations().size()) + " declarations",
+                            sel.getLine(),
+                            sel.getColumn()
+                    );
+                } else {
+                    symbolTable.addSymbol(
+                            selText,
+                            "css_selector",
+                            String.valueOf(child.getDeclarations().size()) + " declarations",
+                            sel.getLine(),
+                            sel.getColumn()
+                    );
+                }
+            }
+        }
+
+        for (CssRuleNode rule : node.getRules()) {
+            rule.accept(this);
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void visit(HtmlTagNode node) {
+
+        for (ASTNode child : node.getChildren()) {
+            child.accept(this);
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void visit(JinjaExpressionNode node) {
+
+        if (node.getExpression() != null) {
+            collectJinjaVariables(node.getExpression(), node.getLine(), node.getColumn());
+        }
+        return null;
+    }
+
+    private void collectJinjaVariables(ASTNode expr, int line, int column) {
+        if (expr == null) return;
+
+        if (expr instanceof IdentifierNode id) {
+            symbolTable.addSymbol(id.getName(), "jinja_variable", null, line, column);
+        } else if (expr instanceof BinaryExpressionNode bin) {
+            if (bin.getOperator().equals(".")) {
+                collectJinjaVariables(bin.getLeft(), line, column);
+            }
+            else if (bin.getOperator().equals("|")) {
+                collectJinjaVariables(bin.getRight(), line, column);
+            }
+            collectJinjaVariables(bin.getLeft(), line, column);
+            collectJinjaVariables(bin.getRight(), line, column);
+        } else if (expr instanceof CallExpressionNode call) {
+            if (call.getCallee() instanceof IdentifierNode funcId) {
+                symbolTable.addSymbol(funcId.getName(), "jinja_function", null, line, column);
+            }
+            for (ExpressionNode arg : call.getArguments()) {
+                collectJinjaVariables(arg, line, column);
+            }
+        } else {
+            for (ASTNode child : expr.getChildren()) {
+                collectJinjaVariables(child, line, column);
+            }
+        }
     }
 }

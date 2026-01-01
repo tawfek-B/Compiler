@@ -27,12 +27,9 @@ htmlElement
     | TAG_OPEN TAG_NAME htmlAttribute* TAG_SLASH_CLOSE  # htmlVoidTag
     | SCRIPTLET                                         # scriptletElement
     | SCRIPT_OPEN (SCRIPT_BODY | SCRIPT_SHORT_BODY)     # scriptTag
-    | style                                             # styleTag
+    | STYLE_OPEN stylesheet STYLE_CLOSE                 # styleTag
     ;
 
-style
-    : STYLE_OPEN stylesheet STYLE_CLOSE                 # fullStyle
-    ;
 
 jinjaExpression
     : JINJA_EXPR_OPEN JINJA_EXPR_CONTENT JINJA_EXPR_CLOSE   # jinjaExpr
