@@ -351,7 +351,7 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
         String blockName = node.getName();
 
         if (!node.getName().equals("end")) {
-
+            // Generate label only if not already generated
             String blockLabel = labelTable.generateBlockLabel(blockName);
 
             symbolTable.addSymbol(
@@ -376,10 +376,10 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(CssDocumentNode node) {
-
+        // Traverse general children (CDO, CDC, text, etc.)
         for (CssRuleNode child : node.getRules()) {
             child.accept(this);
-            for (CssSelectorNode sel : child.getSelectors()) {
+            for (CssSelectorNode sel : child.getSelectors()) {  // assuming you have getSelectors()
                 String selText = sel.getSelector().trim();
                 if (selText.startsWith(".")) {
                     String className = selText.substring(1);
@@ -402,7 +402,8 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
             }
         }
 
-        for (CssRuleNode rule : node.getRules()) {
+        // IMPORTANT: Also traverse the specific rules list
+        for (CssRuleNode rule : node.getRules()) {  // assuming you have getRules() method
             rule.accept(this);
         }
 
@@ -411,7 +412,9 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(HtmlTagNode node) {
+        // Optional debug: System.out.println("Visiting HTML tag: " + node.getTagName());
 
+        // IMPORTANT: Recurse into all children (attributes, content, CSS document, etc.)
         for (ASTNode child : node.getChildren()) {
             child.accept(this);
         }
@@ -419,9 +422,10 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
         return null;
     }
 
+    // 2. Visit Jinja Expression (e.g. {{ product.name }}, {{ url_for('...') }})
     @Override
     public Void visit(JinjaExpressionNode node) {
-
+        // Recurse into the parsed expression to collect variables/functions
         if (node.getExpression() != null) {
             collectJinjaVariables(node.getExpression(), node.getLine(), node.getColumn());
         }
@@ -434,9 +438,11 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
         if (expr instanceof IdentifierNode id) {
             symbolTable.addSymbol(id.getName(), "jinja_variable", null, line, column);
         } else if (expr instanceof BinaryExpressionNode bin) {
+            // Dot access: product.name → collect "product"
             if (bin.getOperator().equals(".")) {
                 collectJinjaVariables(bin.getLeft(), line, column);
             }
+            // Filter: "%.2f"|format → collect "format" if it's a call
             else if (bin.getOperator().equals("|")) {
                 collectJinjaVariables(bin.getRight(), line, column);
             }

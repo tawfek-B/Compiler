@@ -17,6 +17,7 @@ public class CssDocumentNode extends CssNode {
 
     public void addRule(CssRuleNode rule) {
         rules.add(rule);
+        add(rule);
     }
 
     public List<CssRuleNode> getRules() {
@@ -30,7 +31,7 @@ public class CssDocumentNode extends CssNode {
 
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this);
     }
 
     public <T> T accept(HtmlWithCssVisitor<T> visitor) {

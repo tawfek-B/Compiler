@@ -1,108 +1,161 @@
 package app;
 
-import antlr.grammars.*;
+import antlr.grammars.HTMLWithCSSLexer;
+import antlr.grammars.HTMLWithCSSParser;
+import ast.core.ASTNode;
+import ast.css.*;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.ParseTree;
 import table.LabelTable;
 import table.SymbolTable;
 import visitors.HtmlWithCssVisitorClass;
-import ast.core.*;
-import ast.html.*;
-import ast.jinja.*;
-import ast.css.*;
-import org.antlr.v4.runtime.*;
 import visitors.SymbolTableVisitor;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
 
     private static final SymbolTable symbolTable = new SymbolTable();
     private static final LabelTable labelTable = new LabelTable();
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
+        String path = args.length > 0 ? args[0] : "src/test";
 
-        String filePath = "C:\\Users\\hp\\ANTLR\\CompilerPractice\\src\\test\\test.html";
-        String template = Files.readString(Paths.get(filePath));
+        System.out.println("Processing files in: " + path);
+        System.out.println("===========================================");
 
-        var lexer = new HTMLWithCSSLexer(CharStreams.fromString(template));
-        var tokens = new CommonTokenStream(lexer);
-        var parser = new HTMLWithCSSParser(tokens);
-        var tree = parser.htmlDocument();
+        Path start = Paths.get(path);
+        List<Path> allFiles = new ArrayList<>();
 
-        var visitor = new HtmlWithCssVisitorClass();
-        ASTNode root = visitor.visit(tree);
+        if (Files.isRegularFile(start)) {
+            allFiles.add(start);
+        } else {
+            try (Stream<Path> paths = Files.walk(start)) {
+                allFiles = paths.filter(Files::isRegularFile)
+                        .collect(Collectors.toList());
+            } catch (IOException e) {
+                System.err.println("Error walking directory: " + e.getMessage());
+                return;
+            }
+        }
 
+        List<Path> htmlFiles = allFiles.stream()
+                .filter(p -> p.toString().toLowerCase().endsWith(".html"))
+                .toList();
+
+        if (!htmlFiles.isEmpty()) {
+            System.out.println("\n=== Processing HTML/Jinja Files ===");
+            for (Path html : htmlFiles) {
+                processSingleFile(html);
+            }
+        }
+
+        System.out.println("\nAll files processed successfully.");
+    }
+
+    private static void processSingleFile(Path filePath) {
+        String fileName = filePath.getFileName().toString();
+        System.out.println("\n--- " + fileName + " ---");
+
+        try {
+            CharStream input = CharStreams.fromPath(filePath);
+            ASTNode ast = null;
+
+            if (fileName.toLowerCase().endsWith(".html")) {
+                ast = processHtmlFile(input);
+                printCssDetails(ast, fileName);
+            } else {
+                System.out.println("Skipping unsupported file type");
+                return;
+            }
+
+            if (ast != null) {
+                System.out.println("AST:");
+                printAst(ast, "");
+            }
+
+            System.out.println("Done.");
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static ASTNode processHtmlFile(CharStream input) {
+        HTMLWithCSSLexer lexer = new HTMLWithCSSLexer(input);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        HTMLWithCSSParser parser = new HTMLWithCSSParser(tokens);
+        parser.removeErrorListeners();
+        ParseTree tree = parser.htmlDocument();
+        ASTNode ast = (new HtmlWithCssVisitorClass()).visit(tree);
 
         symbolTable.clear();
         labelTable.clear();
-        root.accept(new SymbolTableVisitor(symbolTable, labelTable));
+        ast.accept(new SymbolTableVisitor(symbolTable, labelTable));
 
         System.out.println("\nSymbol Table:");
         symbolTable.print();
 
         System.out.println("\nLabel Table:");
         labelTable.print();
+        System.out.println();
 
-        System.out.println("=== FULL AST TREE ===");
-        printNode(root, "");
-
-        System.out.println("\n=== DETAILED CSS CONTENT ===");
-        printCssDetails(root, "");
+        return ast;
     }
-
-    private static void printNode(ASTNode node, String indent) {
+    private static void printAst(ASTNode node, String indent) {
         if (node == null) return;
 
-        System.out.println(node.getClass().getSimpleName() + "\t|\tLine: " + node.getLine() + "\t|\tColumn: " + node.getColumn() +"\t|\tChildren: " + node.getChildren());
+        String type = node.getClass().getSimpleName();
+        System.out.println(indent + type + " (line " + node.getLine() +
+                ", col " + node.getColumn() + ")");
 
         for (ASTNode child : node.getChildren()) {
-            printNode(child, indent + "  ");
+            printAst(child, indent + "  ");
         }
     }
 
-    private static void printCssDetails(ASTNode node, String indent) {
-        // Only process when we find a CssDocumentNode
+    private static void printCssDetails(ASTNode node, String fileName) {
+        boolean[] found = {false};
+        printCssRecursive(node, "", found);
+
+        if (!found[0]) {
+            System.out.println("No Stylesheet in: " + fileName);
+        }
+    }
+
+    private static void printCssRecursive(ASTNode node, String indent, boolean[] found) {
         if (node instanceof CssDocumentNode cssDoc) {
-            System.out.println(indent + "CSS Document Node (line " + cssDoc.getLine() + ") contains:");
+            found[0] = true;
+            System.out.println(indent + "CSS Document (line " + cssDoc.getLine() + "):");
             indent += "  ";
 
             for (CssNode rule : cssDoc.getRules()) {
-                if (rule instanceof CssAtRuleNode atRule) {
-                    String value = atRule.getValue().trim();
-                    System.out.println(indent + "@" + atRule.getName() + (value.isEmpty() ? "" : " " + value));
-                }
-                else if (rule instanceof CssKeyframesNode kf) {
-                    System.out.println(indent + "@keyframes " + kf.toString().replace("CSS Keyframes Node: ", "").trim());
-                }
-                else if (rule instanceof CssMediaRuleNode media) {
-                    System.out.println(indent + "@media rule (contains " + media.getChildren().size() + " nested items)");
-                }
-                else if (rule instanceof CssRuleNode cssRule) {
-                    System.out.println(indent + "Ruleset (line " + cssRule.getLine() + ") with " + cssRule.getSelectors().size() + " selector(s):");
-                    for (var sel : cssRule.getSelectors()) {
-                        System.out.println(indent + "  → " + sel.getSelector().trim());
+                if (rule instanceof CssRuleNode r) {
+                    System.out.println(indent + "Ruleset:");
+                    for (var sel : r.getSelectors()) {
+                        System.out.println(indent + "  → " + sel.getSelector());
                     }
-
-                    if (!cssRule.getDeclarations().isEmpty()) {
-                        System.out.println(indent + "  Declarations (" + cssRule.getDeclarations().size() + "):");
-                        for (var decl : cssRule.getDeclarations()) {
-                            String imp = decl.isImportant() ? " !important" : "";
-                            System.out.println(indent + "    " + decl.getProperty().trim() + ": " + decl.getValue().trim() + imp);
+                    if (!r.getDeclarations().isEmpty()) {
+                        System.out.println(indent + "  Declarations:");
+                        for (var decl : r.getDeclarations()) {
+                            String imp = decl.isImportant() ? " !" : "";
+                            System.out.println(indent + "    " + decl.getProperty() + ": " + decl.getValue() + imp);
                         }
-                    } else {
-                        System.out.println(indent + "  (no declarations)");
                     }
+                } else {
+                    System.out.println(indent + rule.getClass().getSimpleName());
                 }
-                else if (rule instanceof CssNode) {
-                    System.out.println(indent + rule.getClass().getSimpleName() + " (line " + rule.getLine() + ")");
-                }
-                System.out.println();
             }
             System.out.println();
         }
 
         for (ASTNode child : node.getChildren()) {
-            printCssDetails(child, indent);
+            printCssRecursive(child, indent, found);
         }
     }
 }

@@ -179,8 +179,8 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         for (HTMLWithCSSParser.StatementContext stmt : ctx.statement()) {
             ASTNode node = stmt.accept(this);
 
-            if (node instanceof CssRuleNode cssNode) {
-                doc.addRule(cssNode);
+            if (node instanceof CssNode cssNode) {
+                doc.addRule((CssRuleNode) cssNode);
             } else if (node != null) {
                 doc.add(node);
             }
@@ -194,15 +194,15 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         CssRuleNode rule = new CssRuleNode(ctx.start.getLine(), ctx.getStart().getCharPositionInLine());
         StringBuilder selectorText = new StringBuilder();
         if(ctx.combined_selector(0) != null && ctx.combined_selector(0).selector(0) != null && ctx.combined_selector(0).selector(0).selpart(0) != null)
-            selectorText = new StringBuilder(ctx.combined_selector(0).selector(0).selpart(0).CLASSKEYWORD().getText());
+             selectorText = new StringBuilder(ctx.combined_selector(0).selector(0).selpart(0).CLASSKEYWORD().getText());
         else
             selectorText = new StringBuilder(ctx.combined_selector(0).selector(0).getText());   //this will fix any selectors that don't have . like body
         // Selectors
         for (HTMLWithCSSParser.Combined_selectorContext selCtx : ctx.combined_selector()) {
             if(selCtx.selector(0) != null && selCtx.selector(0).selpart(0) != null && selCtx.selector(0).selpart(0).CLASSKEYWORD() != null) {
                 for(int i = 1; i < selCtx.selector().size(); i++) {
-                    if(selCtx.selector(i) != null)
-                        selectorText.append(" ").append(selCtx.selector(i).getText());
+                if(selCtx.selector(i) != null)
+                    selectorText.append(" ").append(selCtx.selector(i).getText());
                 }
             }
 

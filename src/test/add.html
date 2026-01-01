@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Product{% endblock %}
+
+{% block content %}
+<h1>Add New Product</h1>
+<form method="POST" style="max-width:500px;">
+    <div style="margin-bottom:15px;">
+        <label>Name:</label><br>
+        <input type="text" name="name" required style="width:100%; padding:8px;">
+    </div>
+    <div style="margin-bottom:15px;">
+        <label>Price ($):</label><br>
+        <input type="number" name="price" step="0.01" required style="width:100%; padding:8px;">
+    </div>
+    <div style="margin-bottom:15px;">
+        <label>Description:</label><br>
+        <textarea name="description" rows="4" style="width:100%; padding:8px;"></textarea>
+    </div>
+    <div style="margin-bottom:15px;">
+        <label>Image URL (optional):</label><br>
+        <input type="url" name="image" placeholder="https://..." style="width:100%; padding:8px;">
+    </div>
+    <button type="submit" style="padding:10px 20px; background:#007bff; color:white; border:none; border-radius:5px;">Add Product</button>
+</form>
+{% endblock %}

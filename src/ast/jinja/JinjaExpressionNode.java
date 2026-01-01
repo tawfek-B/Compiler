@@ -21,12 +21,12 @@ public class JinjaExpressionNode extends JinjaNode {
 
     @Override
     public String toString() {
-        return "JinjaExpressionNode: " + (expression != null ? expression.getClass().getSimpleName() : "null");
+        return "JinjaExpressionNode: " + (expression != null ? expression.getType() : "null");
     }
 
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this);
     }
 
     @Override

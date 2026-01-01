@@ -27,7 +27,7 @@ public class HtmlTagNode extends HtmlNode {
 
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this);
     }
 
     @Override
