@@ -15,10 +15,10 @@ public class CallExpressionNode extends ExpressionNode {
     ) {
         super(line, column);
         this.callee = callee;
-        this.arguments = arguments;
+        this.arguments = arguments != null ? arguments : List.of();
 
         add(callee);
-        arguments.forEach(this::add);
+        this.arguments.forEach(this::add);
     }
 
     public ExpressionNode getCallee() {

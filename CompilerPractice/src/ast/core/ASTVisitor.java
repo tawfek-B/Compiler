@@ -32,6 +32,7 @@ public interface ASTVisitor<T> {
     T visit(NullLiteralNode node);
 
 
+    Void visit(GlobalNode node);
 
     T visit(FunctionDefNode node);
     T visit(ParameterNode parameterNode);

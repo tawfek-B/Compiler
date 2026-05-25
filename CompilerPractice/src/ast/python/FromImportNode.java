@@ -1,33 +1,25 @@
 package ast.python;
 
 import ast.core.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FromImportNode extends StatementNode {
 
     private final IdentifierNode module;
-    private final IdentifierNode name;
+    private final List<IdentifierNode> importedNames;
 
-    public FromImportNode(
-            IdentifierNode module,
-            IdentifierNode name,
-            int line,
-            int column
-    ) {
+    public FromImportNode(IdentifierNode module, List<IdentifierNode> importedNames, int line, int column) {
         super(line, column);
         this.module = module;
-        this.name = name;
+        this.importedNames = importedNames != null ? importedNames : new ArrayList<>();
 
         add(module);
-        add(name);
+        this.importedNames.forEach(this::add);
     }
 
-    public IdentifierNode getModule() {
-        return module;
-    }
-
-    public IdentifierNode getName() {
-        return name;
-    }
+    public IdentifierNode getModule() { return module; }
+    public List<IdentifierNode> getImportedNames() { return importedNames; }
 
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {

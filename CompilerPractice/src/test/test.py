@@ -1,123 +1,63 @@
-@route("/home")
-def home(a, b, c):
-    x = 10
-    y = 20.5
-    z = x + y * 2 - 5 / 1
+from flask import Flask, render_template, request, redirect, url_for, flash
+from datetime import datetime
 
-    nums = [1, 2, 3, 4]
-    data = {key: 1, value: 2}
+app = Flask(__name__)
+app.secret_key = "super_secret_key"  # Needed for flash messages
 
-    if x > 5:
-        result = "x is greater"
-    elif x == 5:
-        result = "x equals five"
-    else:
-        result = "x is smaller"
+# In-memory storage (for demo – no real database)
+products = [
+    {"id": 1, "name": "Laptop Pro", "price": 1299.99, "description": "High-performance laptop", "image": "https://via.placeholder.com/300x200?text=Laptop"},
+    {"id": 2, "name": "Wireless Mouse", "price": 29.99, "description": "Ergonomic mouse", "image": "https://via.placeholder.com/300x200?text=Mouse"}
+]
+next_id = 3
 
-    for i in range(0, 3):
-        temp = i * 2
+@app.route("/")
+@app.route("/products")
+def products_list():
+    return render_template("products.html", products=products)
 
-    for item in nums:
-        value = item + 1
+@app.route("/product/<int:product_id>")
+def product_details(product_id):
+    product = next([p for p in products if p["id"] == product_id], None)
+    if product is None:
+        flash("Product not found!", "error")
+        return redirect(url_for("products_list"))
+    return render_template("details.html", product=product)
 
-    return result
+@app.route("/add", methods=["GET", "POST"])
+def add_product():
+    if request.method == "POST":
+        global next_id
+        name = request.form.get("name")
+        price = float(request.form.get("price", 0))
+        description = request.form.get("description")
+        image = request.form.get("image", "https://via.placeholder.com/300x200?text=Product")
 
+        if not name or price <= 0:
+            flash("Invalid product data!", "error")
+            return redirect(url_for("add_product"))
 
-def math_ops(n):
-    a = n % 2
-    b = (n + 3) * 4
-    c = n == 10
-    d = n != 5
-    e = n >= 1
-    f = n <= 100
-    return a
+        products.append({
+            "id": next_id,
+            "name": name,
+            "price": price,
+            "description": description,
+            "image": image
+        })
+        next_id += 1
 
+        flash("Product added successfully!", "success")
+        return redirect(url_for("products_list"))
 
-x = 10
+    return render_template("add.html")
 
+# Optional: Delete product
+@app.route("/delete/<int:product_id>", methods=["POST"])
+def delete_product(product_id):
+    global products
+    products = [p for p in products if p["id"] != product_id]
+    flash("Product deleted!", "success")
+    return redirect(url_for("products_list"))
 
-def call_examples():
-    x = home(1, 2, 3)
-    y = math_ops(10)
-    z = print("Hello, World")
-    return x
-
-
-def while_examples(limit):
-    i = 0
-    total = 0
-
-    while i < limit:
-        total = total + i
-        i = i + 1
-
-    return total
-
-
-def nested_while():
-    i = 0
-    j = 0
-
-    while i < 3:
-        j = 0
-        while j < 2:
-            temp = i * j
-            j = j + 1
-        i = i + 1
-
-    return temp
-
-
-def try_examples(a, b):
-    try:
-        result = a / b
-    except ZeroDivisionError:
-        result = 0
-    finally:
-        print("Division attempted")
-
-    return result
-
-
-def multiple_except(n):
-    try:
-        value = int(n)
-        result = 10 / value
-    except ValueError:
-        result = -1
-    except ZeroDivisionError:
-        result = 0
-    finally:
-        status = "done"
-
-    return result
-
-
-def try_without_except(x):
-    try:
-        y = x + 1
-    finally:
-        print("Finally executed")
-
-    return y
-
-
-try:
-    a = 10
-    b = 0
-    c = a / b
-except ZeroDivisionError:
-    c = -1
-finally:
-    message = "End of program"
-
-
-# Single-line comment
-
-"""
-This is a multiline comment.
-It should be ignored by the lexer.
-"""
-
-value = 42
-text = "Done"
+if name == "main":
+    app.run(debug=True)

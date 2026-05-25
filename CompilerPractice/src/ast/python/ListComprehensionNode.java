@@ -7,11 +7,14 @@ public class ListComprehensionNode extends ExpressionNode {
     private final ExpressionNode expression;
     private final IdentifierNode variable;
     private final ExpressionNode iterable;
+    private final ExpressionNode condition;
+
 
     public ListComprehensionNode(
             ExpressionNode expression,
             IdentifierNode variable,
             ExpressionNode iterable,
+            ExpressionNode condition,
             int line,
             int column
     ) {
@@ -19,10 +22,12 @@ public class ListComprehensionNode extends ExpressionNode {
         this.expression = expression;
         this.variable = variable;
         this.iterable = iterable;
+        this.condition = condition;
 
         add(expression);
         add(variable);
         add(iterable);
+        if (condition!=null) add(condition);
     }
 
     public ExpressionNode getExpression() {
@@ -35,6 +40,9 @@ public class ListComprehensionNode extends ExpressionNode {
 
     public ExpressionNode getIterable() {
         return iterable;
+    }
+    public ExpressionNode getCondition() {
+        return condition;
     }
 
     @Override

@@ -2,7 +2,6 @@ package visitors;
 
 import ast.core.*;
 import ast.css.CssDocumentNode;
-import ast.css.CssNode;
 import ast.css.CssRuleNode;
 import ast.css.CssSelectorNode;
 import ast.html.HtmlDocumentNode;
@@ -12,16 +11,31 @@ import ast.jinja.JinjaExpressionNode;
 import ast.python.*;
 import table.*;
 
-import java.util.UUID;
 
-public class SymbolTableVisitor implements ASTVisitor<Void> {
+public class DefinitionVisitor implements ASTVisitor<Void> {
 
     private final SymbolTable symbolTable;
     private final LabelTable labelTable;
 
-    public SymbolTableVisitor(SymbolTable symbolTable, LabelTable labelTable) {
+    public DefinitionVisitor(SymbolTable symbolTable, LabelTable labelTable) {
         this.symbolTable = symbolTable;
         this.labelTable = labelTable;
+    }
+
+    private Type inferType(ASTNode node) {
+        if (node == null) return Type.UNKNOWN;
+
+        if (node instanceof NumberLiteralNode n) {
+            return n.getValue().contains(".") ? Type.FLOAT : Type.INT;
+        }
+        if (node instanceof StringLiteralNode) return Type.STRING;
+        if (node instanceof BooleanLiteralNode) return Type.BOOLEAN;
+        if (node instanceof ListNode) return Type.LIST;
+        if (node instanceof DictNode) return Type.DICT;
+        if (node instanceof CallExpressionNode) return Type.UNKNOWN; // to improve later
+        if (node instanceof ListComprehensionNode) return Type.LIST;
+
+        return Type.UNKNOWN;
     }
 
     // program
@@ -38,9 +52,11 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(BlockNode node) {
+        symbolTable.enterScope("block_" + node.getLine());
         for (ASTNode stmt : node.getChildren()) {
             stmt.accept(this);
         }
+        symbolTable.exitScope();
         return null;
     }
 
@@ -49,35 +65,48 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visit(GlobalNode node) {
+        for (IdentifierNode id : node.getNames()) {
+            // Mark as global (you can add special handling later)
+            System.out.println("Global declared: " + id.getName());
+        }
+        return null;
+    }
+
     // functions
 
     @Override
     public Void visit(FunctionDefNode node) {
 
-        SymbolRow functionSymbol = symbolTable.addSymbol(
+        FunctionSymbol functionSymbol = new FunctionSymbol(
                 node.getName(),
-                "function",
-                null,
+                Type.FUNCTION,
+                java.util.List.of(),
                 node.getLine(),
                 node.getColumn()
         );
 
+        if(!symbolTable.define(functionSymbol)){
+            System.out.println("ERROR: Function:"+ node.getName() + "already defined");
+        }
         labelTable.generateLabel(functionSymbol);
-
-        symbolTable.enterScope(node.getName());
+        symbolTable.enterScope("function_"+ node.getName());
 
         for (ParameterNode param : node.getParameters()) {
-            symbolTable.addSymbol(
+            Symbol paramSymbol = new Symbol(
                     param.getName(),
-                    "parameter",
-                    null,
+                    Type.UNKNOWN,
+                    SymbolKind.PARAMETER,
                     param.getLine(),
                     param.getColumn()
             );
+            if (!symbolTable.define(paramSymbol)) {
+                System.out.println("Error: Duplicate paramSymbol " + paramSymbol.getName());
+            }
         }
 
         if (node.getBody() != null) {
-
             node.getBody().accept(this);
         }
         symbolTable.exitScope();
@@ -101,14 +130,21 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
     public Void visit(AssignmentNode node) {
         IdentifierNode id = node.getTarget();
 
+        // Define variable if not already exists
         if (!symbolTable.existsInCurrentScope(id.getName())) {
-            symbolTable.addSymbol(
+            Type inferredType = inferType(node.getValue());
+
+            Symbol varSymbol = new Symbol(
                     id.getName(),
-                    "variable",
-                    null,
+                    inferredType,
+                    SymbolKind.VARIABLE,
                     id.getLine(),
                     id.getColumn()
             );
+
+            if (!symbolTable.define(varSymbol)) {
+                System.out.println("Warning: Duplicate variable " + id.getName());
+            }
         }
 
         if (node.getValue() != null) {
@@ -123,22 +159,31 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(IfNode node) {
-        labelTable.generateAnonymousLabel();
 
         if (node.getCondition() != null) {
             node.getCondition().accept(this);
         }
         if (node.getThenBlock() != null) {
+            symbolTable.enterScope("if_" + node.getLine());
             node.getThenBlock().accept(this);
+            symbolTable.exitScope();
         }
 
 
-        for (ElifNode e : node.getElifBlocks()) {
-            e.accept(this);
+        for (ElifNode elif : node.getElifBlocks()) {
+            if (elif.getCondition() != null) {
+                elif.getCondition().accept(this);
+            }
+                symbolTable.enterScope("elif_" + node.getLine());
+                elif.getBlock().accept(this);
+                symbolTable.exitScope();
+
         }
 
         if (node.getElseBlock() != null) {
+            symbolTable.enterScope("else_" + node.getLine());
             node.getElseBlock().accept(this);
+            symbolTable.exitScope();
         }
 
         return null;
@@ -146,7 +191,7 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(ElifNode node) {
-        labelTable.generateAnonymousLabel();
+
         node.getCondition().accept(this);
         node.getBlock().accept(this);
         return null;
@@ -154,7 +199,7 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(ElseNode node) {
-        labelTable.generateAnonymousLabel();
+
         node.getBlock().accept(this);
         return null;
     }
@@ -163,25 +208,41 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(WhileNode node) {
-        labelTable.generateAnonymousLabel();
 
-        node.getCondition().accept(this);
-        node.getBody().accept(this);
+        if (node.getCondition() != null) {
+            node.getCondition().accept(this);
+        }
+
+        symbolTable.enterScope("while_" + node.getLine());
+
+        if (node.getBody() != null) {
+            node.getBody().accept(this);
+        }
+
+        symbolTable.exitScope();
+
         return null;
     }
 
     @Override
     public Void visit(ForNode node) {
 
-        SymbolRow forSymbol = symbolTable.addSymbol(
+        symbolTable.enterScope("for_" + node.getLine());
+
+        Type inferredType = inferType(node.getVariable());
+        Symbol loopVar = new Symbol(
                 node.getVariable().getName(),
-                "loop_var",
-                null,
+                inferredType,
+                SymbolKind.VARIABLE,
                 node.getVariable().getLine(),
                 node.getVariable().getColumn()
         );
 
-        labelTable.generateLabel(forSymbol);
+        if (!symbolTable.define(loopVar)) {
+            System.out.println("Error: Duplicate loopVar " + loopVar.getName());
+        }
+
+        labelTable.generateLabel(loopVar);
 
         if (node.getIterable() != null) {
             node.getIterable().accept(this);
@@ -191,6 +252,8 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
             node.getBody().accept(this);
         }
 
+        symbolTable.exitScope();
+
         return null;
     }
 
@@ -198,23 +261,29 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(TryNode node) {
-        labelTable.generateAnonymousLabel();
 
+
+        symbolTable.enterScope("try_" + node.getLine());
         node.getTryBlock().accept(this);
+        symbolTable.exitScope();
 
         for (ExceptNode e : node.getExceptBlocks()) {
-            e.accept(this);
+            symbolTable.enterScope("except_" + node.getLine());
+            e.getBlock().accept(this);
+            symbolTable.exitScope();
         }
 
         if (node.getFinallyBlock() != null) {
+            symbolTable.enterScope("finally_" + node.getLine());
             node.getFinallyBlock().accept(this);
+            symbolTable.exitScope();
         }
         return null;
     }
 
     @Override
     public Void visit(ExceptNode node) {
-        labelTable.generateAnonymousLabel();
+
 
         if (node.getExceptionType() != null) {
             node.getExceptionType().accept(this);
@@ -226,7 +295,7 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(FinallyNode node) {
-        labelTable.generateAnonymousLabel();
+
         node.getBlock().accept(this);
         return null;
     }
@@ -348,63 +417,75 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(JinjaBlockNode node) {
+
         String blockName = node.getName();
 
-        if (!node.getName().equals("end")) {
-            // Generate label only if not already generated
-            String blockLabel = labelTable.generateBlockLabel(blockName);
-
-            symbolTable.addSymbol(
-                    blockName,
-                    "jinja_block",
-                    blockLabel,
-                    node.getLine(),
-                    node.getColumn()
-            );
-
-            symbolTable.enterScope("jinja_block_" + blockName);
-
-            for (ASTNode child : node.getChildren()) {
-                child.accept(this);
-            }
-
-            symbolTable.exitScope();
+        if (blockName.equals("end") || blockName.equals("endblock")) {
+            return null;
         }
+
+        // Optional: label
+        labelTable.generateBlockLabel(blockName);
+
+        symbolTable.enterScope("jinja_" + blockName + "_" + node.getLine());
+
+        for (ASTNode child : node.getChildren()) {
+            child.accept(this);
+        }
+
+        symbolTable.exitScope();
 
         return null;
     }
 
     @Override
     public Void visit(CssDocumentNode node) {
-        // Traverse general children (CDO, CDC, text, etc.)
-        for (CssRuleNode child : node.getRules()) {
-            child.accept(this);
-            for (CssSelectorNode sel : child.getSelectors()) {  // assuming you have getSelectors()
-                String selText = sel.getSelector().trim();
-                if (selText.startsWith(".")) {
-                    String className = selText.substring(1);
-                    symbolTable.addSymbol(
-                            className,
-                            "css_class",
-                            String.valueOf(child.getDeclarations().size()) + " declarations",
-                            sel.getLine(),
-                            sel.getColumn()
-                    );
-                } else {
-                    symbolTable.addSymbol(
-                            selText,
-                            "css_selector",
-                            String.valueOf(child.getDeclarations().size()) + " declarations",
-                            sel.getLine(),
-                            sel.getColumn()
-                    );
+
+        for (CssRuleNode rule : node.getRules()) {
+            rule.accept(this);
+
+            for (CssSelectorNode sel : rule.getSelectors()) {
+                String selector = sel.getSelector().trim();
+
+                // Split by combinators: space, >, +, ~
+                String[] parts = selector.split("\\s+|>|\\+|~");
+
+                for (String part : parts) {
+                    if (part.isBlank()) continue;
+
+                    Symbol symbol;
+
+                    if (part.startsWith(".")) {
+                        symbol = new Symbol(
+                                part.substring(1),
+                                Type.UNKNOWN,
+                                SymbolKind.CSS_CLASS,
+                                sel.getLine(),
+                                sel.getColumn()
+                        );
+                    } else if (part.startsWith("#")) {
+                        symbol = new Symbol(
+                                part.substring(1),
+                                Type.UNKNOWN,
+                                SymbolKind.CSS_ID,
+                                sel.getLine(),
+                                sel.getColumn()
+                        );
+                    } else {
+                        symbol = new Symbol(
+                                part,
+                                Type.UNKNOWN,
+                                SymbolKind.CSS_TAG,
+                                sel.getLine(),
+                                sel.getColumn()
+                        );
+                    }
+
+                    if (!symbolTable.existsInCurrentScope(symbol.getName())) {
+                        symbolTable.define(symbol);
+                    }
                 }
             }
-        }
-
-        // IMPORTANT: Also traverse the specific rules list
-        for (CssRuleNode rule : node.getRules()) {  // assuming you have getRules() method
-            rule.accept(this);
         }
 
         return null;
@@ -413,6 +494,32 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
     @Override
     public Void visit(HtmlTagNode node) {
         // Optional debug: System.out.println("Visiting HTML tag: " + node.getTagName());
+
+//        Symbol tagSymbol = new Symbol(
+//                node.getTagName(),
+//                Type.UNKNOWN,
+//                SymbolKind.HTML_TAG,
+//                node.getLine(),
+//                node.getColumn()
+//        );
+//
+//        if (!symbolTable.define(tagSymbol)) {
+//            System.out.println("Error: Duplicate tagSymbol " + tagSymbol.getName());
+//        }
+//
+//        for (var attr : node.getAttributes()) {
+//            Symbol attrSymbol = new Symbol(
+//                    attr.getName(),
+//                    Type.UNKNOWN,
+//                    SymbolKind.HTML_ATTRIBUTE,
+//                    attr.getLine(),
+//                    attr.getColumn()
+//            );
+//
+//            if (!symbolTable.define(attrSymbol)) {
+//                System.out.println("Error: Duplicate attribute " + attr.getName());
+//            }
+//        }
 
         // IMPORTANT: Recurse into all children (attributes, content, CSS document, etc.)
         for (ASTNode child : node.getChildren()) {
@@ -436,29 +543,60 @@ public class SymbolTableVisitor implements ASTVisitor<Void> {
         if (expr == null) return;
 
         if (expr instanceof IdentifierNode id) {
-            symbolTable.addSymbol(id.getName(), "jinja_variable", null, line, column);
+
+            String baseName = id.getName().split("\\.")[0];
+
+            // ❌ ignore function calls
+            if (id.getName().contains("(")) return;
+
+            // ✅ FIX: define only if not exists in CURRENT scope
+            if (!symbolTable.existsInCurrentScope(baseName)) {
+                Symbol jinjaVarSymbol = new Symbol(
+                        baseName,
+                        Type.UNKNOWN,
+                        SymbolKind.JINJA_VARIABLE,
+                        line,
+                        column
+                );
+                symbolTable.define(jinjaVarSymbol);
+            }
+
         } else if (expr instanceof BinaryExpressionNode bin) {
-            // Dot access: product.name → collect "product"
+
             if (bin.getOperator().equals(".")) {
                 collectJinjaVariables(bin.getLeft(), line, column);
-            }
-            // Filter: "%.2f"|format → collect "format" if it's a call
-            else if (bin.getOperator().equals("|")) {
+            } else if (bin.getOperator().equals("|")) {
                 collectJinjaVariables(bin.getRight(), line, column);
             }
+
             collectJinjaVariables(bin.getLeft(), line, column);
             collectJinjaVariables(bin.getRight(), line, column);
+
         } else if (expr instanceof CallExpressionNode call) {
+
             if (call.getCallee() instanceof IdentifierNode funcId) {
-                symbolTable.addSymbol(funcId.getName(), "jinja_function", null, line, column);
+
+                if (!symbolTable.existsInCurrentScope(funcId.getName())) {
+                    Symbol jinjaFuncSymbol = new Symbol(
+                            funcId.getName(),
+                            Type.UNKNOWN,
+                            SymbolKind.JINJA_FUNCTION,
+                            line,
+                            column
+                    );
+                    symbolTable.define(jinjaFuncSymbol);
+                }
             }
+
             for (ExpressionNode arg : call.getArguments()) {
                 collectJinjaVariables(arg, line, column);
             }
+
         } else {
             for (ASTNode child : expr.getChildren()) {
                 collectJinjaVariables(child, line, column);
             }
         }
     }
+
 }

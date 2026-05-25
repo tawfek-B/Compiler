@@ -4,92 +4,91 @@ import java.util.*;
 
 public class SymbolTable {
 
-    private final Map<String, List<SymbolRow>> scopes = new LinkedHashMap<>();
-    private final Deque<String> scopeStack = new ArrayDeque<>();
+    private Scope currentScope ;
+    private final Scope root;
 
     public SymbolTable() {
-        enterScope("global");
+        root = new Scope("global", null);
+        currentScope = root;
     }
 
     //Scope Management
 
     public void enterScope(String scopeName) {
-        scopeStack.push(scopeName);
-        scopes.putIfAbsent(scopeName, new ArrayList<>());
+        Scope newScope = new Scope(scopeName, currentScope);
+        currentScope.addChild(newScope);
+        currentScope = newScope;
     }
 
     public void exitScope() {
-        if (scopeStack.size() > 1) {
-            scopeStack.pop();
+        if(currentScope.getParent() != null){
+            currentScope = currentScope.getParent();
         }
     }
 
-    public String getCurrentScope() {
-        return scopeStack.peek();
+    public Scope getCurrentScope() {
+        return currentScope;
     }
 
     //Symbol Management
 
-    public SymbolRow addSymbol(
-            String name,
-            String type,
-            String value,
-            int line,
-            int column
-    ) {
-        SymbolRow row = new SymbolRow(
-                name,
-                type,
-                value,
-                line,
-                column,
-                getCurrentScope()
-        );
-
-        scopes.get(getCurrentScope()).add(row);
-        return row;
+    public boolean define(Symbol symbol){
+        return currentScope.define(symbol);
     }
 
-    public boolean existsInCurrentScope(String name) {
-        return scopes.get(getCurrentScope())
-                .stream()
-                .anyMatch(s -> s.getName().equals(name));
-    }
+    public Symbol resolve(String name){
+        Scope scope = currentScope;
 
-    public SymbolRow lookup(String name) {
-        for (String scope : scopeStack) {
-            for (SymbolRow row : scopes.get(scope)) {
-                if (row.getName().equals(name)) {
-                    return row;
-                }
+        while(scope != null){
+            Symbol symbol = scope.resolveLocal(name);
+            if(symbol != null){
+                return  symbol;
             }
+            scope = scope.getParent();
         }
         return null;
     }
 
-    public List<SymbolRow> getSymbolsInScope(String scope) {
-        return scopes.getOrDefault(scope, List.of());
-    }
 
-    public Map<String, List<SymbolRow>> getAllScopes() {
-        return scopes;
+    public boolean existsInCurrentScope(String name) {
+        return currentScope.resolveLocal(name) != null;
     }
 
     public void clear() {
-        scopes.clear();                // Remove all scopes and their symbols
-        scopeStack.clear();            // Reset the scope stack
-        enterScope("global");          // Restore the initial global scope
+        currentScope = root;
+        root.getChildren().clear();
+        root.getSymbols().clear();
     }
 
-    //Print
 
     public void print() {
-        System.out.println("\n=========== SYMBOL TABLE ===========\n");
-        for (Map.Entry<String, List<SymbolRow>> entry : scopes.entrySet()) {
-            System.out.println("Scope: " + entry.getKey());
-            System.out.println("-".repeat(80));
-            entry.getValue().forEach(System.out::println);
-            System.out.println();
+        System.out.println("\n===== SYMBOL TABLE (Hierarchical) =====\n");
+        printScope(root, "", true);
+    }
+
+    private void printScope(Scope scope, String prefix, boolean isLast) {
+        if (scope == null) return;
+
+        String connector = isLast ? "└── " : "├── ";
+        System.out.println(prefix + connector + "Scope: " + scope.getName());
+
+        // Print symbols
+        if (!scope.getSymbols().isEmpty()) {
+            for (Symbol s : scope.getSymbols().values()) {
+                System.out.println(prefix + (isLast ? "    " : "│   ") + "• " + s);
+            }
+        }
+
+        // Print children
+        List<Scope> children = scope.getChildren();
+        for (int i = 0; i < children.size(); i++) {
+            boolean lastChild = (i == children.size() - 1);
+            printScope(
+                    children.get(i),
+                    prefix + (isLast ? "    " : "│   "),
+                    lastChild
+            );
         }
     }
+
 }
