@@ -21,6 +21,8 @@ public class HtmlTagNode extends HtmlNode {
         add(attribute); // add to children
     }
 
+    public List<HtmlAttributeNode> getAttributes() { return attributes; }
+
     public String getTagName() {
         return tagName;
     }

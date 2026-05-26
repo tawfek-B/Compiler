@@ -1,6 +1,7 @@
 package ast.html;
 
 
+import ast.core.ASTNode;
 import ast.core.ASTVisitor;
 import ast.core.HtmlWithCssVisitor;
 
@@ -14,6 +15,12 @@ public class HtmlAttributeNode extends HtmlNode {
         this.value = value;
     }
 
+    public void setValue(String value){
+        this.value = value;
+    }
+    public void add(ASTNode child){
+        children.add(child);
+    }
     public String getName() {
         return name;
     }

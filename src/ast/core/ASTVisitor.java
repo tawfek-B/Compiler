@@ -32,6 +32,7 @@ public interface ASTVisitor<T> {
     T visit(NullLiteralNode node);
 
 
+    Void visit(GlobalNode node);
 
     T visit(FunctionDefNode node);
     T visit(ParameterNode parameterNode);
@@ -58,4 +59,6 @@ public interface ASTVisitor<T> {
     T visit(JinjaBlockNode node);
     T visit(CssDocumentNode node);
     T visit(HtmlTagNode node);
+
+    T visit(MixedWebNode mixedWebNode);
 }
