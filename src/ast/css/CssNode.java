@@ -16,6 +16,7 @@ public abstract class CssNode extends ASTNode {
 
     public void addChild(CssNode child) {
         this.children.add(child);
+        child.setParent(this);
     }
 
     public List<ASTNode> getChildren() {

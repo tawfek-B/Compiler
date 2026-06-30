@@ -1,34 +1,33 @@
-package ast.html;
+package ast.jinja;
 
-import ast.core.ASTNode;
 import ast.core.ASTVisitor;
+import ast.core.ExpressionNode;
 import ast.core.HtmlWithCssVisitor;
 
-public class HtmlAttributeNode extends HtmlNode {
-    private String name;
-    private String value;
+public class JinjaWithAssignmentNode extends ExpressionNode {
 
-    public HtmlAttributeNode(String name, String value, int line, int column) {
-        super("Html Attribute Node", line, column);
+    private final String name;
+    private final ExpressionNode value;
+
+    public JinjaWithAssignmentNode(String name, ExpressionNode value, int line, int column) {
+        super("jinja-with-assignment", line, column);
         this.name = name;
         this.value = value;
-    }
 
-    public void setValue(String value) {
-        this.value = value;
+        this.add(value);
     }
 
     public String getName() {
         return name;
     }
 
-    public String getValue() {
+    public ExpressionNode getValue() {
         return value;
     }
 
     @Override
     public String toString() {
-        return "HtmlAttributeNode: " + name + " = \"" + value + "\"";
+        return "JINJA WITH ASSIGNMENT NODE\t" + name + "\t" + value;
     }
 
     @Override

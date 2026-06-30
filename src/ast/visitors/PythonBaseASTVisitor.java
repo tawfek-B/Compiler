@@ -3,10 +3,10 @@ package ast.visitors;
 import ast.core.*;
 import ast.css.CssDocumentNode;
 import ast.css.CssRuleNode;
+import ast.html.HtmlAttributeNode;
 import ast.html.HtmlDocumentNode;
 import ast.html.HtmlTagNode;
-import ast.jinja.JinjaBlockNode;
-import ast.jinja.JinjaExpressionNode;
+import ast.jinja.*;
 import ast.python.*;
 
 public class PythonBaseASTVisitor<T> implements ASTVisitor<T> {
@@ -80,6 +80,11 @@ public class PythonBaseASTVisitor<T> implements ASTVisitor<T> {
 
     @Override
     public T visit(NullLiteralNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(GlobalNode node) {
         return null;
     }
 
@@ -193,13 +198,58 @@ public class PythonBaseASTVisitor<T> implements ASTVisitor<T> {
     }
 
     @Override
+    public T visit(JinjaWithAssignmentNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(JinjaEndNode node) {
+        return null;
+    }
+
+    @Override
     public T visit(JinjaBlockNode node) {
 
         return null;
     }
 
     @Override
+    public T visit(JinjaIfNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(JinjaExtendNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(JinjaElseNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(JinjaForNode node) {
+        return null;
+    }
+
+    @Override
     public T visit(HtmlTagNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(HtmlAttributeNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(TupleExpressionNode node) {
+        return null;
+    }
+
+    @Override
+    public T visit(MixedWebNode mixedWebNode) {
         return null;
     }
 

@@ -18,6 +18,7 @@ public class CssMediaQueryNode extends CssNode {
 
     public void addRule(CssRuleNode rule) {
         this.rules.add(rule);
+        rule.setParent(this);
     }
 
     public List<ASTNode> getChildren() {

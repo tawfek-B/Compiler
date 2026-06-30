@@ -9,6 +9,7 @@ public abstract class HtmlNode extends ASTNode {
 
     public void addChild(HtmlNode child) {
         this.children.add(child);
+        child.setParent(this);
     }
 
 }

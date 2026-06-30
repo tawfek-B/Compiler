@@ -9,6 +9,8 @@ public abstract class ASTNode {
     protected final int line;
     protected final int column;
     protected final List<ASTNode> children = new ArrayList<>();
+    protected ASTNode parent;
+
 
     protected ASTNode(String type ,int line, int column) {
         this.type = type;
@@ -23,11 +25,15 @@ public abstract class ASTNode {
     }
 
 
-
     public void add(ASTNode child) {
         if (child != null) {
             children.add(child);
+            child.setParent(this);
         }
+    }
+
+    public ASTNode getParent() {
+        return parent;
     }
 
     public List<ASTNode> getChildren() {
@@ -44,6 +50,10 @@ public abstract class ASTNode {
 
     public int getColumn() {
         return column;
+    }
+
+    public void setParent(ASTNode parent) {
+        this.parent = parent;
     }
 
     public abstract <T> T accept(ASTVisitor<T> visitor);

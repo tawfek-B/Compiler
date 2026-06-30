@@ -4,59 +4,187 @@ import ast.core.*;
 import ast.css.CssDocumentNode;
 import ast.css.CssRuleNode;
 import ast.css.CssSelectorNode;
+import ast.html.HtmlAttributeNode;
 import ast.html.HtmlDocumentNode;
 import ast.html.HtmlTagNode;
-import ast.jinja.JinjaBlockNode;
-import ast.jinja.JinjaExpressionNode;
+import ast.jinja.*;
 import ast.python.*;
 import table.*;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 
 public class DefinitionVisitor implements ASTVisitor<Void> {
 
     private final SymbolTable symbolTable;
     private final LabelTable labelTable;
 
+    private boolean inPythonFunction = false;
+
+    private Scope lastFunctionScope = null;
+
+    // Track function context for parser workaround (global statement breaks AST)
+    private Stack<FunctionContext> functionStack = new Stack<>();
+
+    private static class FunctionContext {
+        String name;
+        int startLine;
+        int endLine;
+        Scope scope;
+
+        FunctionContext(String name, int startLine, Scope scope) {
+            this.name = name;
+            this.startLine = startLine;
+            this.scope = scope;
+            this.endLine = 0; // Will be set on exit
+        }
+    }
+
     public DefinitionVisitor(SymbolTable symbolTable, LabelTable labelTable) {
         this.symbolTable = symbolTable;
         this.labelTable = labelTable;
     }
 
+    // Check if a line falls within current function context
+    private boolean isInsideCurrentFunction(int line) {
+        if (functionStack.isEmpty()) return false;
+        FunctionContext ctx = functionStack.peek();
+        if (ctx.endLine == 0) return line >= ctx.startLine;
+        return line >= ctx.startLine && line <= ctx.endLine;
+    }
+
     private Type inferType(ASTNode node) {
         if (node == null) return Type.UNKNOWN;
 
-        if (node instanceof NumberLiteralNode n) {
-            return n.getValue().contains(".") ? Type.FLOAT : Type.INT;
+        if (node instanceof NumberLiteralNode) {
+            return Type.INT;
+        } else if (node instanceof StringLiteralNode) {
+            return Type.STRING;
+        } else if (node instanceof BooleanLiteralNode) {
+            return Type.BOOL;
+        } else if (node instanceof NullLiteralNode) {
+            return Type.NULL;
+        } else if (node instanceof ListNode) {
+            return Type.LIST;
+        } else if (node instanceof DictNode) {
+            return Type.DICT;
+        } else if (node instanceof IdentifierNode id) {
+            Symbol sym = symbolTable.resolve(id.getName());
+            return sym != null ? sym.getType() : Type.UNKNOWN;
+        } else if (node instanceof BinaryExpressionNode bin) {
+            String op = bin.getOperator();
+            if (op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/") ||
+                    op.equals("//") || op.equals("%") || op.equals("**")) {
+                Type left = inferType(bin.getLeft());
+                Type right = inferType(bin.getRight());
+                if (left == Type.STRING || right == Type.STRING) return Type.STRING;
+                return Type.INT;
+            } else if (op.equals("==") || op.equals("!=") || op.equals("<") || op.equals(">") ||
+                    op.equals("<=") || op.equals(">=") || op.equals("is") || op.equals("in")) {
+                return Type.BOOL;
+            } else if (op.equals("and") || op.equals("or") || op.equals("&&") || op.equals("||")) {
+                return Type.BOOL;
+            } else if (op.equals(".")) {
+                return Type.UNKNOWN;
+            }
+            return Type.UNKNOWN;
+        } else if (node instanceof UnaryExpressionNode un) {
+            String op = un.getOperator();
+            if (op.equals("not") || op.equals("!")) return Type.BOOL;
+            if (op.equals("-") || op.equals("+")) return Type.INT;
+            return Type.UNKNOWN;
+        } else if (node instanceof ComparisonNode) {
+            return Type.BOOL;
+        } else if (node instanceof LogicalExpressionNode) {
+            return Type.BOOL;
+        } else if (node instanceof CallExpressionNode call) {
+            if (call.getCallee() instanceof IdentifierNode id) {
+                String name = id.getName();
+                if (name.equals("int") || name.equals("len") || name.equals("range")) return Type.INT;
+                if (name.equals("float")) return Type.FLOAT;
+                if (name.equals("str")) return Type.STRING;
+                if (name.equals("bool")) return Type.BOOL;
+                Symbol func = symbolTable.resolve(name);
+                if (func instanceof FunctionSymbol f) return f.getType();
+            } else if (call.getCallee() instanceof AttributeAccessNode attr) {
+                // heuristic: `.get(...)` on a dict-like object (request.form, request.args, etc.)
+                // returns the value type (a string for Flask form/args data) when a value is present
+                if ("get".equals(attr.getAttribute())) {
+                    return Type.STRING;
+                }
+            }
+            return Type.UNKNOWN;
         }
-        if (node instanceof StringLiteralNode) return Type.STRING;
-        if (node instanceof BooleanLiteralNode) return Type.BOOLEAN;
-        if (node instanceof ListNode) return Type.LIST;
-        if (node instanceof DictNode) return Type.DICT;
-        if (node instanceof CallExpressionNode) return Type.UNKNOWN; // to improve later
-        if (node instanceof ListComprehensionNode) return Type.LIST;
-
         return Type.UNKNOWN;
     }
 
-    // program
+    private Type inferReturnType(ASTNode body) {
+        if (body == null) return Type.UNKNOWN;
+        Type found = Type.UNKNOWN;
+        for (ASTNode child : body.getChildren()) {
+            Type t = inferReturnTypeFromNode(child);
+            if (t != Type.UNKNOWN) found = t;
+        }
+        return found;
+    }
+
+    private Type inferReturnTypeFromNode(ASTNode node) {
+        if (node instanceof ReturnNode ret) {
+            return inferType(ret.getExpression());
+        } else if (node instanceof IfNode ifNode) {
+            Type thenType = inferReturnType(ifNode.getThenBlock());
+            Type elseType = ifNode.getElseBlock() != null ? inferReturnType(ifNode.getElseBlock()) : Type.UNKNOWN;
+            for (ElifNode elif : ifNode.getElifBlocks()) {
+                Type elifType = inferReturnType(elif.getBlock());
+                if (elifType != Type.UNKNOWN) thenType = elifType;
+            }
+            return thenType != Type.UNKNOWN ? thenType : elseType;
+        } else if (node instanceof BlockNode block) {
+            return inferReturnType(block);
+        }
+        return Type.UNKNOWN;
+    }
 
     @Override
     public Void visit(ProgramNode node) {
+        Scope leakScope = null;
+
         for (ASTNode child : node.getChildren()) {
-            child.accept(this);
+            if (child instanceof FunctionDefNode) {
+                child.accept(this);
+                leakScope = lastFunctionScope; // statements after this point leak into it
+            } else if (leakScope != null) {
+                // This node was misattached to ProgramNode by the parser bug.
+                // Re-home it inside the previous function's scope.
+                Scope saved = symbolTable.getCurrentScope();
+                boolean wasInFunction = inPythonFunction;
+
+                symbolTable.currentScope = leakScope;
+                inPythonFunction = true;
+
+                child.accept(this);
+
+                symbolTable.currentScope = saved;
+                inPythonFunction = wasInFunction;
+            } else {
+                child.accept(this);
+            }
         }
         return null;
     }
 
-    // block
-
     @Override
     public Void visit(BlockNode node) {
-        symbolTable.enterScope("block_" + node.getLine());
+        if (!inPythonFunction) {
+            symbolTable.enterScope("block_" + node.hashCode());
+        }
         for (ASTNode stmt : node.getChildren()) {
             stmt.accept(this);
         }
-        symbolTable.exitScope();
+        if (!inPythonFunction) {
+            symbolTable.exitScope();
+        }
         return null;
     }
 
@@ -66,32 +194,36 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
     }
 
     @Override
-    public Void visit(GlobalNode node) {
-        for (IdentifierNode id : node.getNames()) {
-            // Mark as global (you can add special handling later)
-            System.out.println("Global declared: " + id.getName());
-        }
-        return null;
-    }
-
-    // functions
-
-    @Override
     public Void visit(FunctionDefNode node) {
+        Type returnType = inferReturnType(node.getBody());
+        if (returnType == Type.UNKNOWN) returnType = Type.VOID;
+
+        List<Type> paramTypes = new ArrayList<>();
+        for (ParameterNode param : node.getParameters()) {
+            paramTypes.add(Type.UNKNOWN);
+        }
 
         FunctionSymbol functionSymbol = new FunctionSymbol(
                 node.getName(),
-                Type.FUNCTION,
-                java.util.List.of(),
+                returnType,
+                paramTypes,
                 node.getLine(),
-                node.getColumn()
+                node.getColumn(),
+                symbolTable.getCurrentFileOrigin()
         );
 
-        if(!symbolTable.define(functionSymbol)){
-            System.out.println("ERROR: Function:"+ node.getName() + "already defined");
+        if (!symbolTable.define(functionSymbol)) {
+            System.out.println("ERROR: Function:" + node.getName() + "already defined");
         }
         labelTable.generateLabel(functionSymbol);
-        symbolTable.enterScope("function_"+ node.getName());
+
+        boolean wasInFunction = inPythonFunction;
+        inPythonFunction = true;
+
+        symbolTable.enterScope("function_" + node.getName());
+
+        FunctionContext ctx = new FunctionContext(node.getName(), node.getLine(), symbolTable.getCurrentScope());
+        functionStack.push(ctx);
 
         for (ParameterNode param : node.getParameters()) {
             Symbol paramSymbol = new Symbol(
@@ -99,7 +231,8 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                     Type.UNKNOWN,
                     SymbolKind.PARAMETER,
                     param.getLine(),
-                    param.getColumn()
+                    param.getColumn(),
+                    symbolTable.getCurrentFileOrigin()
             );
             if (!symbolTable.define(paramSymbol)) {
                 System.out.println("Error: Duplicate paramSymbol " + paramSymbol.getName());
@@ -109,10 +242,34 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         if (node.getBody() != null) {
             node.getBody().accept(this);
         }
+
+        ctx.endLine = estimateFunctionEndLine(node);
+
+        lastFunctionScope = symbolTable.getCurrentScope(); // <-- ADD THIS LINE
         symbolTable.exitScope();
+        functionStack.pop();
+
+        inPythonFunction = wasInFunction;
         return null;
     }
 
+    private int estimateFunctionEndLine(FunctionDefNode node) {
+        if (node.getBody() == null) return node.getLine();
+        int maxLine = node.getLine();
+        for (ASTNode child : node.getBody().getChildren()) {
+            maxLine = Math.max(maxLine, getMaxLine(child));
+        }
+        return maxLine;
+    }
+
+    private int getMaxLine(ASTNode node) {
+        if (node == null) return 0;
+        int max = node.getLine();
+        for (ASTNode child : node.getChildren()) {
+            max = Math.max(max, getMaxLine(child));
+        }
+        return max;
+    }
 
     @Override
     public Void visit(ParameterNode node) {
@@ -124,74 +281,81 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         return null;
     }
 
-    // assignment
-
     @Override
     public Void visit(AssignmentNode node) {
         IdentifierNode id = node.getTarget();
+        Type inferredType = node.getValue() != null ? inferType(node.getValue()) : Type.UNKNOWN;
 
-        // Define variable if not already exists
-        if (!symbolTable.existsInCurrentScope(id.getName())) {
-            Type inferredType = inferType(node.getValue());
-
-            Symbol varSymbol = new Symbol(
-                    id.getName(),
-                    inferredType,
-                    SymbolKind.VARIABLE,
-                    id.getLine(),
-                    id.getColumn()
-            );
-
-            if (!symbolTable.define(varSymbol)) {
-                System.out.println("Warning: Duplicate variable " + id.getName());
+        // Workaround for parser bug: global statement breaks AST block structure
+        // If we're at global level but line is inside a function, force into function scope
+        if (!inPythonFunction && isInsideCurrentFunction(node.getLine())) {
+            Scope funcScope = functionStack.peek().scope;
+            if (funcScope.resolveLocal(id.getName()) == null) {
+                Symbol varSymbol = new Symbol(
+                        id.getName(),
+                        inferredType,
+                        SymbolKind.VARIABLE,
+                        id.getLine(),
+                        id.getColumn(),
+                        symbolTable.getCurrentFileOrigin()
+                );
+                funcScope.define(varSymbol);
+            } else {
+                Symbol existing = funcScope.resolveLocal(id.getName());
+                if (existing != null && existing.getType() == Type.UNKNOWN && inferredType != Type.UNKNOWN) {
+                    existing.setType(inferredType);
+                }
+            }
+        } else {
+            // Normal path
+            if (!symbolTable.existsInCurrentScope(id.getName())) {
+                Symbol varSymbol = new Symbol(
+                        id.getName(),
+                        inferredType,
+                        SymbolKind.VARIABLE,
+                        id.getLine(),
+                        id.getColumn(),
+                        symbolTable.getCurrentFileOrigin()
+                );
+                if (!symbolTable.define(varSymbol)) {
+                    System.out.println("Error: Duplicate variable '" + varSymbol.getName() + "'");
+                }
+            } else {
+                Symbol existing = symbolTable.resolveLocal(id.getName());
+                if (existing != null && existing.getType() == Type.UNKNOWN && inferredType != Type.UNKNOWN) {
+                    existing.setType(inferredType);
+                }
             }
         }
 
         if (node.getValue() != null) {
             node.getValue().accept(this);
         }
-
         return null;
     }
 
-
-    // if statements
-
     @Override
     public Void visit(IfNode node) {
-
         if (node.getCondition() != null) {
             node.getCondition().accept(this);
         }
         if (node.getThenBlock() != null) {
-            symbolTable.enterScope("if_" + node.getLine());
             node.getThenBlock().accept(this);
-            symbolTable.exitScope();
         }
-
-
         for (ElifNode elif : node.getElifBlocks()) {
             if (elif.getCondition() != null) {
                 elif.getCondition().accept(this);
             }
-                symbolTable.enterScope("elif_" + node.getLine());
-                elif.getBlock().accept(this);
-                symbolTable.exitScope();
-
+            elif.getBlock().accept(this);
         }
-
         if (node.getElseBlock() != null) {
-            symbolTable.enterScope("else_" + node.getLine());
             node.getElseBlock().accept(this);
-            symbolTable.exitScope();
         }
-
         return null;
     }
 
     @Override
     public Void visit(ElifNode node) {
-
         node.getCondition().accept(this);
         node.getBlock().accept(this);
         return null;
@@ -199,108 +363,84 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(ElseNode node) {
-
         node.getBlock().accept(this);
         return null;
     }
 
-    // loops
-
     @Override
     public Void visit(WhileNode node) {
-
         if (node.getCondition() != null) {
             node.getCondition().accept(this);
         }
-
-        symbolTable.enterScope("while_" + node.getLine());
-
+        if (!inPythonFunction) symbolTable.enterScope("while");
         if (node.getBody() != null) {
             node.getBody().accept(this);
         }
-
-        symbolTable.exitScope();
-
+        if (!inPythonFunction) symbolTable.exitScope();
         return null;
     }
 
     @Override
     public Void visit(ForNode node) {
+        if (!inPythonFunction) symbolTable.enterScope("for");
 
-        symbolTable.enterScope("for_" + node.getLine());
-
-        Type inferredType = inferType(node.getVariable());
         Symbol loopVar = new Symbol(
                 node.getVariable().getName(),
-                inferredType,
+                Type.UNKNOWN,
                 SymbolKind.VARIABLE,
                 node.getVariable().getLine(),
-                node.getVariable().getColumn()
+                node.getVariable().getColumn(),
+                symbolTable.getCurrentFileOrigin()
         );
-
         if (!symbolTable.define(loopVar)) {
             System.out.println("Error: Duplicate loopVar " + loopVar.getName());
         }
-
         labelTable.generateLabel(loopVar);
 
         if (node.getIterable() != null) {
             node.getIterable().accept(this);
         }
-
         if (node.getBody() != null) {
             node.getBody().accept(this);
         }
-
-        symbolTable.exitScope();
-
+        if (!inPythonFunction) symbolTable.exitScope();
         return null;
     }
 
-    // try and except blocks
-
     @Override
     public Void visit(TryNode node) {
-
-
-        symbolTable.enterScope("try_" + node.getLine());
+        if (!inPythonFunction) symbolTable.enterScope("try");
         node.getTryBlock().accept(this);
-        symbolTable.exitScope();
+        if (!inPythonFunction) symbolTable.exitScope();
 
         for (ExceptNode e : node.getExceptBlocks()) {
-            symbolTable.enterScope("except_" + node.getLine());
+            if (!inPythonFunction) symbolTable.enterScope("except");
             e.getBlock().accept(this);
-            symbolTable.exitScope();
+            if (!inPythonFunction) symbolTable.exitScope();
         }
 
         if (node.getFinallyBlock() != null) {
-            symbolTable.enterScope("finally_" + node.getLine());
+            if (!inPythonFunction) symbolTable.enterScope("finally");
             node.getFinallyBlock().accept(this);
-            symbolTable.exitScope();
+            if (!inPythonFunction) symbolTable.exitScope();
         }
         return null;
     }
 
     @Override
     public Void visit(ExceptNode node) {
-
-
         if (node.getExceptionType() != null) {
             node.getExceptionType().accept(this);
         }
-
         node.getBlock().accept(this);
         return null;
     }
 
     @Override
     public Void visit(FinallyNode node) {
-
         node.getBlock().accept(this);
         return null;
     }
-
-    // expressions
 
     @Override
     public Void visit(BinaryExpressionNode node) {
@@ -316,7 +456,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(ComparisonNode node) {
-
         if (node.getLeft() != null) {
             node.getLeft().accept(this);
         }
@@ -366,6 +505,11 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
     }
 
     @Override
+    public Void visit(GlobalNode node) {
+        return null;
+    }
+
+    @Override
     public Void visit(ListNode node) {
         return null;
     }
@@ -407,61 +551,65 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(HtmlDocumentNode node) {
-
         for (ASTNode child : node.getChildren()) {
             child.accept(this);
         }
-
         return null;
     }
 
     @Override
     public Void visit(JinjaBlockNode node) {
-
-        String blockName = node.getName();
-
+        String blockName = node.getType();
         if (blockName.equals("end") || blockName.equals("endblock")) {
             return null;
         }
-
-        // Optional: label
         labelTable.generateBlockLabel(blockName);
-
         symbolTable.enterScope("jinja_" + blockName + "_" + node.getLine());
-
         for (ASTNode child : node.getChildren()) {
             child.accept(this);
         }
-
         symbolTable.exitScope();
+        return null;
+    }
 
+    @Override
+    public Void visit(JinjaIfNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(JinjaExtendNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(JinjaElseNode node) {
+        return null;
+    }
+
+    @Override
+    public Void visit(JinjaForNode node) {
         return null;
     }
 
     @Override
     public Void visit(CssDocumentNode node) {
-
         for (CssRuleNode rule : node.getRules()) {
             rule.accept(this);
-
             for (CssSelectorNode sel : rule.getSelectors()) {
                 String selector = sel.getSelector().trim();
-
-                // Split by combinators: space, >, +, ~
                 String[] parts = selector.split("\\s+|>|\\+|~");
-
                 for (String part : parts) {
                     if (part.isBlank()) continue;
-
                     Symbol symbol;
-
                     if (part.startsWith(".")) {
                         symbol = new Symbol(
                                 part.substring(1),
                                 Type.UNKNOWN,
                                 SymbolKind.CSS_CLASS,
                                 sel.getLine(),
-                                sel.getColumn()
+                                sel.getColumn(),
+                                symbolTable.getCurrentFileOrigin()
                         );
                     } else if (part.startsWith("#")) {
                         symbol = new Symbol(
@@ -469,7 +617,8 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                                 Type.UNKNOWN,
                                 SymbolKind.CSS_ID,
                                 sel.getLine(),
-                                sel.getColumn()
+                                sel.getColumn(),
+                                symbolTable.getCurrentFileOrigin()
                         );
                     } else {
                         symbol = new Symbol(
@@ -477,59 +626,40 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                                 Type.UNKNOWN,
                                 SymbolKind.CSS_TAG,
                                 sel.getLine(),
-                                sel.getColumn()
+                                sel.getColumn(),
+                                symbolTable.getCurrentFileOrigin()
                         );
                     }
-
                     if (!symbolTable.existsInCurrentScope(symbol.getName())) {
                         symbolTable.define(symbol);
                     }
                 }
             }
         }
-
         return null;
     }
 
     @Override
     public Void visit(HtmlTagNode node) {
-        // Optional debug: System.out.println("Visiting HTML tag: " + node.getTagName());
-
-//        Symbol tagSymbol = new Symbol(
-//                node.getTagName(),
-//                Type.UNKNOWN,
-//                SymbolKind.HTML_TAG,
-//                node.getLine(),
-//                node.getColumn()
-//        );
-//
-//        if (!symbolTable.define(tagSymbol)) {
-//            System.out.println("Error: Duplicate tagSymbol " + tagSymbol.getName());
-//        }
-//
-//        for (var attr : node.getAttributes()) {
-//            Symbol attrSymbol = new Symbol(
-//                    attr.getName(),
-//                    Type.UNKNOWN,
-//                    SymbolKind.HTML_ATTRIBUTE,
-//                    attr.getLine(),
-//                    attr.getColumn()
-//            );
-//
-//            if (!symbolTable.define(attrSymbol)) {
-//                System.out.println("Error: Duplicate attribute " + attr.getName());
-//            }
-//        }
-
-        // IMPORTANT: Recurse into all children (attributes, content, CSS document, etc.)
         for (ASTNode child : node.getChildren()) {
             child.accept(this);
         }
-
         return null;
     }
 
     @Override
+    public Void visit(HtmlAttributeNode node) {
+        for (ASTNode child : node.getChildren()) {
+            child.accept(this);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visit(TupleExpressionNode node) {
+        return null;
+    }
+
     public Void visit(MixedWebNode node) {
         for (ASTNode child : node.getChildren()) {
             child.accept(this);
@@ -537,13 +667,41 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         return null;
     }
 
-    // 2. Visit Jinja Expression (e.g. {{ product.name }}, {{ url_for('...') }})
     @Override
     public Void visit(JinjaExpressionNode node) {
-        // Recurse into the parsed expression to collect variables/functions
         if (node.getExpression() != null) {
             collectJinjaVariables(node.getExpression(), node.getLine(), node.getColumn());
         }
+        return null;
+    }
+
+    @Override
+    public Void visit(JinjaWithAssignmentNode node) {
+        Type inferredType = Type.UNKNOWN;
+        if (node.getValue() instanceof CallExpressionNode call
+                && call.getCallee() instanceof IdentifierNode calleeId) {
+            inferredType = inferJinjaFunctionType(calleeId.getName());
+        }
+
+        Symbol withVar = new Symbol(
+                node.getName(),
+                inferredType,
+                SymbolKind.JINJA_VARIABLE,
+                node.getLine(),
+                node.getColumn(),
+                symbolTable.getCurrentFileOrigin()
+        );
+        if (!symbolTable.existsInCurrentScope(withVar.getName())) {
+            symbolTable.define(withVar);
+        }
+        if (node.getValue() != null) {
+            node.getValue().accept(this);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visit(JinjaEndNode jinjaEndNode) {
         return null;
     }
 
@@ -551,60 +709,66 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         if (expr == null) return;
 
         if (expr instanceof IdentifierNode id) {
+            String fullName = id.getName();
+            if (fullName.contains("(")) return;
 
-            String baseName = id.getName().split("\\.")[0];
+            boolean isAttributeAccess = fullName.contains(".");
+            String baseName = fullName.split("\\.")[0];
 
-            // ❌ ignore function calls
-            if (id.getName().contains("(")) return;
-
-            // ✅ FIX: define only if not exists in CURRENT scope
             if (!symbolTable.existsInCurrentScope(baseName)) {
                 Symbol jinjaVarSymbol = new Symbol(
                         baseName,
-                        Type.UNKNOWN,
+                        isAttributeAccess ? Type.DICT : Type.UNKNOWN,
                         SymbolKind.JINJA_VARIABLE,
-                        line,
-                        column
+                        line, column,
+                        symbolTable.getCurrentFileOrigin()
                 );
                 symbolTable.define(jinjaVarSymbol);
+            } else {
+                // upgrade an already-UNKNOWN var if we later see it used with attribute access
+                Symbol existing = symbolTable.resolve(baseName);
+                if (existing != null && existing.getType() == Type.UNKNOWN && isAttributeAccess) {
+                    existing.setType(Type.DICT);
+                }
             }
-
         } else if (expr instanceof BinaryExpressionNode bin) {
-
             if (bin.getOperator().equals(".")) {
                 collectJinjaVariables(bin.getLeft(), line, column);
             } else if (bin.getOperator().equals("|")) {
                 collectJinjaVariables(bin.getRight(), line, column);
             }
-
             collectJinjaVariables(bin.getLeft(), line, column);
             collectJinjaVariables(bin.getRight(), line, column);
-
         } else if (expr instanceof CallExpressionNode call) {
-
             if (call.getCallee() instanceof IdentifierNode funcId) {
-
                 if (!symbolTable.existsInCurrentScope(funcId.getName())) {
                     Symbol jinjaFuncSymbol = new Symbol(
                             funcId.getName(),
-                            Type.UNKNOWN,
+                            inferJinjaFunctionType(funcId.getName()),   // <-- was Type.UNKNOWN
                             SymbolKind.JINJA_FUNCTION,
-                            line,
-                            column
+                            line, column,
+                            symbolTable.getCurrentFileOrigin()
                     );
                     symbolTable.define(jinjaFuncSymbol);
                 }
             }
-
             for (ExpressionNode arg : call.getArguments()) {
                 collectJinjaVariables(arg, line, column);
             }
-
         } else {
             for (ASTNode child : expr.getChildren()) {
                 collectJinjaVariables(child, line, column);
             }
         }
     }
-
+    private Type inferJinjaFunctionType(String name) {
+        return switch (name) {
+            case "url_for" -> Type.STRING;
+            case "get_flashed_messages" -> Type.LIST;
+            case "format" -> Type.STRING;          // covers "%.2f"|format(...)
+            case "len" -> Type.INT;
+            case "str" -> Type.STRING;
+            default -> Type.UNKNOWN;
+        };
+    }
 }

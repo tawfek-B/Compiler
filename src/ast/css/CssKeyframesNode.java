@@ -19,6 +19,7 @@ public class CssKeyframesNode extends CssNode {
 
     public void addBlock(CssKeyframeBlockNode block) {
         this.blocks.add(block);
+        block.setParent(this);
     }
 
     public List<ASTNode> getChildren() {

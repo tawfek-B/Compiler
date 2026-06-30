@@ -5,26 +5,27 @@ import java.util.Map;
 
 public class LabelTable {
 
-    private final Map<String, String> labels = new HashMap<>();
+    private final Map<Symbol, String> labels = new HashMap<>();
     private int counter = 0;
+    private final Map<String,String> blockLabels = new HashMap<>();
 
-    public String generateLabel(SymbolRow symbol) {
-        String key = symbol.getQualifiedName();
+    public String generateLabel(Symbol symbol) {
         return labels.computeIfAbsent(
-                key,
-                k -> "L" + counter++
+                symbol, s -> "L" + counter++
         );
     }
 
     public String generateAnonymousLabel() {
         String label = "L" + counter++;
-        labels.put(label, label);
         return label;
     }
 
     public String generateBlockLabel(String blockName) {
-        String key = "block:" + blockName;
-        return labels.computeIfAbsent(key, k -> "BLOCK_" + counter++);
+        return blockLabels.computeIfAbsent(blockName, k->"BLOCK_"+ k +"_"+ counter ++);
+    }
+
+    public String getLabel(Symbol symbol){
+        return labels.get(symbol);
     }
 
     public void clear() {
@@ -32,14 +33,10 @@ public class LabelTable {
         counter = 0;
     }
 
-    public String getLabel(SymbolRow symbol) {
-        return labels.get(symbol.getQualifiedName());
-    }
-
     public void print() {
         System.out.println("\n=========== LABEL TABLE ===========\n");
         labels.forEach((k, v) ->
-                System.out.println(k + " -> " + v)
+                System.out.println(k.getName() + " -> " + v)
         );
     }
 }

@@ -11,5 +11,6 @@ public abstract class JinjaNode extends ASTNode {
 
     public void addChild(JinjaNode child) {
         this.children.add(child);
+        child.setParent(this);
     }
 }

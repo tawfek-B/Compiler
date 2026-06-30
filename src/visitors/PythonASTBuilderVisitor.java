@@ -12,6 +12,18 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
+    // safe visit for all nodes
+    @SuppressWarnings("Unchecked")
+    private <T extends ASTNode> T safeVisit(org.antlr.v4.runtime.tree.ParseTree ctx){
+        if(ctx == null) return null;
+        ASTNode node = visit(ctx);
+
+        if(node == null){
+            System.out.println("Warning: visit returned null for: "+ ctx.getText());
+        }
+        return (T) node;
+    }
+
     // program
 
     @Override
@@ -20,7 +32,10 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
                 new ProgramNode(ctx.start.getLine(), ctx.start.getCharPositionInLine());
 
         for (pythonParser.StatementContext stmt : ctx.statement()) {
-            program.add(visit(stmt));
+            ASTNode child = safeVisit(stmt);
+            if(child != null){
+                program.add(child);
+            }
         }
         return program;
     }
@@ -33,7 +48,10 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
                 new BlockNode(ctx.start.getLine(), ctx.start.getCharPositionInLine());
 
         for (pythonParser.StatementContext stmt : ctx.statement()) {
-            block.add(visit(stmt));
+            ASTNode blockNode = safeVisit(stmt);
+            if(blockNode != null){
+                block.add(blockNode);
+            }
         }
         return block;
     }
@@ -102,8 +120,7 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
                 ctx.start.getCharPositionInLine()
         );
 
-        ExpressionNode value =
-                (ExpressionNode) visit(ctx.expr());
+        ExpressionNode value = safeVisit(ctx.expr());
 
         return new AssignmentNode(
                 id,
@@ -115,10 +132,7 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitReturnValue(pythonParser.ReturnValueContext ctx) {
-        ExpressionNode expr =
-                ctx.expr() != null
-                        ? (ExpressionNode) visit(ctx.expr())
-                        : null;
+        ExpressionNode expr = safeVisit(ctx.expr());
 
         return new ReturnNode(
                 expr,
@@ -155,21 +169,20 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitIfBlock(pythonParser.IfBlockContext ctx) {
-        ExpressionNode condition = ctx.expr() !=null ?
-                (ExpressionNode) visit(ctx.expr()) : null;
+        ExpressionNode condition =  safeVisit(ctx.expr());
 
-        BlockNode thenBlock = ctx.block() !=null ?
-                (BlockNode) visit(ctx.block()) : null;
+        BlockNode thenBlock = safeVisit(ctx.block());
 
         List<ElifNode> elifs = new ArrayList<>();
         for (var e : ctx.elifStatement()) {
-            elifs.add((ElifNode) visit(e));
+            ElifNode elifNode = safeVisit(e);
+            if(elifNode != null){
+                elifs.add(elifNode);
+            }
         }
 
-        ElseNode elseNode = null;
-        if (ctx.elseStatement() != null) {
-            elseNode = (ElseNode) visit(ctx.elseStatement());
-        }
+        ElseNode elseNode = safeVisit(ctx.elseStatement());
+
 
         return new IfNode(
                 condition,
@@ -183,9 +196,12 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitElifBlock(pythonParser.ElifBlockContext ctx) {
+        ExpressionNode condition = safeVisit(ctx.expr());
+
+        BlockNode body = safeVisit(ctx.block());
         return new ElifNode(
-                (ExpressionNode) visit(ctx.expr()),
-                (BlockNode) visit(ctx.block()),
+                condition,
+                body,
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );
@@ -193,8 +209,10 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitElseBlock(pythonParser.ElseBlockContext ctx) {
+
+        BlockNode body = safeVisit(ctx.block());
         return new ElseNode(
-                (BlockNode) visit(ctx.block()),
+                body,
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );
@@ -204,9 +222,13 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitWhileLoop(pythonParser.WhileLoopContext ctx) {
+
+        ExpressionNode condition = safeVisit(ctx.expr());
+
+        BlockNode body = safeVisit(ctx.block());
         return new WhileNode(
-                (ExpressionNode) visit(ctx.expr()),
-                (BlockNode) visit(ctx.block()),
+                condition,
+                body,
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );
@@ -215,11 +237,9 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
     @Override
     public ASTNode visitForLoop(pythonParser.ForLoopContext ctx) {
 
-        ExpressionNode iterable = ctx.expr() !=null ?
-                (ExpressionNode) visit(ctx.expr()) : null;
+        ExpressionNode iterable = safeVisit(ctx.expr());
 
-        BlockNode body = ctx.block() !=null ?
-                (BlockNode) visit(ctx.block()) : null;
+        BlockNode body = safeVisit(ctx.block());
 
 
         return new ForNode(
@@ -239,18 +259,18 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitTryBlock(pythonParser.TryBlockContext ctx) {
-        BlockNode tryBlock =
-                (BlockNode) visit(ctx.block());
+        BlockNode tryBlock = safeVisit(ctx.block());
 
         List<ExceptNode> excepts = new ArrayList<>();
         for (var ex : ctx.exceptStatement()) {
-            excepts.add((ExceptNode) visit(ex));
+            ExceptNode exceptNode = safeVisit(ex);
+            if(exceptNode != null){
+                excepts.add(exceptNode);
+            }
         }
 
-        FinallyNode finallyNode = null;
-        if (ctx.finallyStatement() != null) {
-            finallyNode = (FinallyNode) visit(ctx.finallyStatement());
-        }
+        FinallyNode finallyNode = safeVisit(ctx.finallyStatement());
+
 
         return new TryNode(
                 tryBlock,
@@ -263,15 +283,14 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitExceptBlock(pythonParser.ExceptBlockContext ctx) {
-        ExpressionNode type = null;
-        if (ctx.expr() != null) {
-            type = (ExpressionNode) visit(ctx.expr());
-        }
+        ExpressionNode type = safeVisit(ctx.expr());
 
+
+        BlockNode body = safeVisit(ctx.block());
         return new ExceptNode(
                 type,
                 null,
-                (BlockNode) visit(ctx.block()),
+                body,
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );
@@ -280,18 +299,15 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitFinallyBlock(pythonParser.FinallyBlockContext ctx) {
+        BlockNode body = safeVisit(ctx.block());
         return new FinallyNode(
-                (BlockNode) visit(ctx.block()),
+                body,
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );
     }
 
     // functions and decorators
-
-
-
-
 
     @Override
     public ASTNode visitFunctionDeclaration(pythonParser.FunctionDeclarationContext ctx) {
@@ -310,10 +326,12 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
             }
         }
 
+        BlockNode body = safeVisit(ctx.block());
+
         return new FunctionDefNode(
                 ctx.ID().getText(),
                 params,
-                (BlockNode) visit(ctx.block()),
+                body,
                 new ArrayList<>(),
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
@@ -346,13 +364,14 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitCompareExpression(pythonParser.CompareExpressionContext ctx) {
-        ExpressionNode left = (ExpressionNode) visit(ctx.addExpr(0));
+        ExpressionNode left = safeVisit(ctx.addExpr(0));
 
         for (int i = 1; i < ctx.addExpr().size(); i++) {
+            ExpressionNode right = safeVisit(ctx.addExpr(i));
             left = new ComparisonNode(
                     left,
                     ctx.getChild(2 * i - 1).getText(),
-                    (ExpressionNode) visit(ctx.addExpr(i)),
+                    right,
                     ctx.start.getLine(),
                     ctx.start.getCharPositionInLine()
             );
@@ -360,11 +379,13 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
         return left;
     }
 
+    // function calls
 
     @Override
-    public ASTNode visitFunctionCallExpression(
-            pythonParser.FunctionCallExpressionContext ctx
-    ) {
+    public ASTNode visitCallExpression(pythonParser.CallExpressionContext ctx) {
+
+        ExpressionNode caller = safeVisit(ctx.atom());
+
         List<ExpressionNode> args = new ArrayList<>();
 
         if (ctx.argumentList() != null) {
@@ -372,30 +393,118 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
                     (pythonParser.ArgumentListExpressionContext) ctx.argumentList();
 
             for (var e : argCtx.argument()) {
-                args.add((ExpressionNode) visit(e));
+                ExpressionNode argumentNode = safeVisit(e);
+                if(argumentNode != null){
+                    args.add(argumentNode);
+                }
             }
         }
 
         return new CallExpressionNode(
-                new IdentifierNode(
-                        ctx.ID().getText(),
-                        ctx.ID().getSymbol().getLine(),
-                        ctx.ID().getSymbol().getCharPositionInLine()
-                ),
+                caller,
                 args,
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );
     }
 
+    // attributes
 
+    @Override
+    public ASTNode visitAttributeAccess(pythonParser.AttributeAccessContext ctx) {
+
+        ExpressionNode object = safeVisit(ctx.atom());
+
+        return new AttributeAccessNode(
+                object,
+                ctx.ID().getText(),
+                ctx.start.getLine(),
+                ctx.start.getCharPositionInLine()
+        );
+    }
+
+    @Override
+    public ASTNode visitSubscriptionExpression(pythonParser.SubscriptionExpressionContext ctx) {
+
+        ExpressionNode object = safeVisit(ctx.atom());
+        ExpressionNode index = safeVisit(ctx.expr());
+
+        return new SubscriptionNode(
+                object,
+                index,
+                ctx.start.getLine(),
+                ctx.start.getCharPositionInLine()
+        );
+    }
+
+    @Override
+    public ASTNode visitParenthesisExpression(pythonParser.ParenthesisExpressionContext ctx) {
+        return safeVisit(ctx.expr());
+    }
+
+    @Override
+    public ASTNode visitPositionalArgument(pythonParser.PositionalArgumentContext ctx) {
+        return safeVisit(ctx.expr());
+    }
+
+    @Override
+    public ASTNode visitKeywordArgument(pythonParser.KeywordArgumentContext ctx) {
+        return new KeywordArgumentNode(
+                ctx.ID().getText(),
+                safeVisit(ctx.expr()),
+                ctx.start.getLine(),
+                ctx.start.getCharPositionInLine()
+        );
+    }
+
+    // generator expression
+
+    @Override
+    public ASTNode visitGeneratorExpression(pythonParser.GeneratorExpressionContext ctx) {
+
+        ExpressionNode resultExpr = safeVisit(ctx.expr());
+
+        if (ctx.comp().size() != 1) {
+            throw new UnsupportedOperationException(
+                    "Multiple 'for' clauses in generator expressions are not supported yet");
+        }
+
+        pythonParser.ComprehensionContext comp = (pythonParser.ComprehensionContext) ctx.comp(0);
+
+        IdentifierNode target = new IdentifierNode(
+                comp.ID().getText(),
+                comp.ID().getSymbol().getLine(),
+                comp.ID().getSymbol().getCharPositionInLine()
+        );
+
+        ExpressionNode iterable = safeVisit(comp.expr(0));
+
+        ExpressionNode condition = null;
+        if (comp.expr().size() > 1) {
+            condition = safeVisit(comp.expr(1));
+        }
+
+        return new GeneratorExpressionNode(
+                resultExpr,
+                target,
+                iterable,
+                condition,
+                ctx.start.getLine(),
+                ctx.start.getCharPositionInLine()
+        );
+    }
+
+    // list literals
 
     @Override
     public ASTNode visitListLiteralExpression(pythonParser.ListLiteralExpressionContext ctx) {
         List<ExpressionNode> elements = new ArrayList<>();
 
         for (var e : ctx.expr()) {
-            elements.add((ExpressionNode) visit(e));
+            ExpressionNode elementNode = safeVisit(e);
+            if(elementNode != null){
+                elements.add(elementNode);
+            }
         }
 
         return new ListNode(
@@ -416,43 +525,35 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitListComprehensionExpression(pythonParser.ListComprehensionExpressionContext ctx) {
-        // The expression that gets evaluated for each item: [ <this> for ... ]
-        ExpressionNode resultExpr = (ExpressionNode) visit(ctx.expr());
+        ExpressionNode resultExpr = safeVisit(ctx.expr());
 
-        // For most simple cases we expect exactly one comprehension clause
-        // (you can later extend to support multiple for-clauses if needed)
 
         if (ctx.comp().size() != 1) {
-            // You can throw an exception or handle multiple for-clauses later
             throw new UnsupportedOperationException(
                     "Multiple 'for' clauses in list comprehensions are not yet supported");
         }
 
-        // Get the first (and usually only) comprehension clause
-        pythonParser.ComprehensionContext comp = (pythonParser.ComprehensionContext) ctx.comp(1);
+        pythonParser.ComprehensionContext comp = (pythonParser.ComprehensionContext) ctx.comp(0);
 
         if(comp != null) {
 
-            // The loop variable (x in "for x in ...")
             IdentifierNode target = new IdentifierNode(
                     comp.ID().getText(),
                     comp.ID().getSymbol().getLine(),
                     comp.ID().getSymbol().getCharPositionInLine()
             );
 
-            // The iterable expression (after "in")
-            ExpressionNode iterableExpr = (ExpressionNode) visit(comp.expr(0));
+            ExpressionNode iterableExpr = safeVisit(comp.expr(0));
 
-            // Optional if-condition
             ExpressionNode condition = null;
             if (comp.expr().size() > 1) {
-                condition = (ExpressionNode) visit(comp.expr(1));
+                condition = safeVisit(comp.expr(1));
             }
 
             return new ListComprehensionNode(
-                    resultExpr,       // what to put in the list
-                    target,           // the loop variable
-                    iterableExpr,     // the source collection
+                    resultExpr,
+                    target,
+                    iterableExpr,
                     ctx.start.getLine(),
                     ctx.start.getCharPositionInLine()
             );
@@ -460,12 +561,17 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
         return null;
     }
 
+    // dict literals
+
     @Override
     public ASTNode visitDictLiteralExpression(pythonParser.DictLiteralExpressionContext ctx) {
         List<KeyValueNode> entries = new ArrayList<>();
 
         for (var p : ctx.pair()) {
-            entries.add((KeyValueNode) visit(p));
+            KeyValueNode entryNode = safeVisit(p);
+            if(entryNode != null){
+                entries.add(entryNode);
+            }
         }
 
         return new DictNode(
@@ -478,13 +584,14 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
     @Override
     public ASTNode visitDictPairExpression(pythonParser.DictPairExpressionContext ctx) {
         String IDValueName = ctx.STRING() !=null ? ctx.getChild(0).getText() : null;
+        ExpressionNode body = safeVisit(ctx.expr());
         return new KeyValueNode(
                 new IdentifierNode(
                         IDValueName,
                         ctx.start.getLine(),
                         ctx.start.getCharPositionInLine()
                 ),
-                (ExpressionNode) visit(ctx.expr()),
+                body,
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );

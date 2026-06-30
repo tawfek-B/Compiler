@@ -19,6 +19,7 @@ public class CssSelectorNode extends CssNode {
 
     public void addDeclaration(CssDeclarationNode decl) {
         declarations.add(decl);
+        decl.setParent(this);
     }
     public String getSelector() {
         return selector;

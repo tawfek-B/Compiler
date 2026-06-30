@@ -64,4 +64,9 @@ public interface HtmlWithCssVisitor <T>{
     T visit(BooleanLiteralNode node);
     T visit(NullLiteralNode node);
 
+    T visit(JinjaEndNode jinjaEndNode);
+
+    T visit(JinjaExtendNode jinjaExtendNode);
+
+    T visit(MixedWebNode mixedWebNode);
 }

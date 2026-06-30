@@ -2,10 +2,10 @@ package ast.core;
 
 import ast.css.CssDocumentNode;
 import ast.css.CssRuleNode;
+import ast.html.HtmlAttributeNode;
 import ast.html.HtmlDocumentNode;
 import ast.html.HtmlTagNode;
-import ast.jinja.JinjaBlockNode;
-import ast.jinja.JinjaExpressionNode;
+import ast.jinja.*;
 import ast.python.*;
 
 public interface ASTVisitor<T> {
@@ -32,7 +32,7 @@ public interface ASTVisitor<T> {
     T visit(NullLiteralNode node);
 
 
-    Void visit(GlobalNode node);
+    T visit(GlobalNode node);
 
     T visit(FunctionDefNode node);
     T visit(ParameterNode parameterNode);
@@ -56,9 +56,21 @@ public interface ASTVisitor<T> {
 
     T visit(HtmlDocumentNode node);
     T visit(JinjaExpressionNode node);
+
+    T visit(JinjaWithAssignmentNode node);
+
+    T visit(JinjaEndNode node);
     T visit(JinjaBlockNode node);
+    T visit(JinjaIfNode node);
+    T visit(JinjaExtendNode node);
+    T visit(JinjaElseNode node);
+    T visit(JinjaForNode node);
     T visit(CssDocumentNode node);
     T visit(HtmlTagNode node);
+    T visit(HtmlAttributeNode node);
+
+    T visit(TupleExpressionNode node);
 
     T visit(MixedWebNode mixedWebNode);
+
 }

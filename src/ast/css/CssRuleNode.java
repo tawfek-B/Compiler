@@ -24,9 +24,11 @@ public class CssRuleNode extends CssNode {
 
     public void addDeclaration(CssDeclarationNode declaration) {
         declarations.add(declaration);
+        declaration.setParent(this);
     }
     public void addSelector(CssSelectorNode selector) {
         selectors.add(selector);
+        selector.setParent(this);
     }
 
     public List<ASTNode> getChildren() {
@@ -42,7 +44,7 @@ public class CssRuleNode extends CssNode {
     }
 
     @Override
-    public <T> T accept(ast.core.HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 
     @Override
     public String toString() {

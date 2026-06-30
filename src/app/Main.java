@@ -16,7 +16,8 @@ import table.LabelTable;
 import table.SymbolTable;
 import visitors.HtmlWithCssVisitorClass;
 import visitors.PythonASTBuilderVisitor;
-import visitors.SymbolTableVisitor;
+import visitors.DefinitionVisitor;
+import visitors.TypeCheckVisitor;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -60,103 +61,103 @@ public class Main {
                 .filter(p -> p.toString().toLowerCase().endsWith(".html"))
                 .toList();
 
-        // 1. Process all Python files first
+        // 1. Process all Python files FIRST — this populates the symbol table
         if (!pyFiles.isEmpty()) {
-            System.out.println("\n=== Processing Python Files First ===");
+            System.out.println("\n=== Processing Python Files ===");
+            symbolTable.clear();   // Fresh start for Python
+            labelTable.clear();
+            symbolTable.setCurrentFileOrigin(path);  // or track per-file
             for (Path py : pyFiles) {
-                processSingleFile(py);
+                processPythonFile(py);
             }
+            System.out.println("\n=== Python Symbol Table ===");
+            symbolTable.printScopeTree();
         }
 
-        // 2. Then process all HTML files
+        // 2. Then process HTML files — they can now resolve Python symbols!
+        //    Do NOT clear() here — HTML needs to see Python symbols
         if (!htmlFiles.isEmpty()) {
             System.out.println("\n=== Processing HTML/Jinja Files ===");
             for (Path html : htmlFiles) {
-                processSingleFile(html);
+                // HTML gets its own nested scope under the global Python scope
+                processHtmlFile(html);
             }
         }
 
         System.out.println("\nAll files processed successfully.");
     }
 
-    private static void processSingleFile(Path filePath) {
+    private static void processPythonFile(Path filePath) {
         String fileName = filePath.getFileName().toString();
+        symbolTable.setCurrentFileOrigin(fileName);
         System.out.println("\n--- " + fileName + " ---");
 
         try {
             CharStream input = CharStreams.fromPath(filePath);
-            ASTNode ast = null;
+            pythonLexer lexer = new pythonLexer(input);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            pythonParser parser = new pythonParser(tokens);
+            parser.removeErrorListeners();
+            ParseTree tree = parser.program();
+            PythonASTBuilderVisitor builder = new PythonASTBuilderVisitor();
+            ASTNode ast = builder.visit(tree);
 
-            if (fileName.toLowerCase().endsWith(".py")) {
-                ast = processPythonFile(input);
-            } else if (fileName.toLowerCase().endsWith(".html")) {
-                ast = processHtmlFile(input);
-                printCssDetails(ast, fileName);
-            } else {
-                System.out.println("Skipping unsupported file type");
-                return;
-            }
+            // Don't clear here — we want to accumulate Python symbols across files
+            ast.accept(new DefinitionVisitor(symbolTable, labelTable));
 
-            if (ast != null) {
-                System.out.println("AST:");
-                printAst(ast);
-            }
+            System.out.println("AST:");
+            printAst(ast);
 
-            System.out.println("Done.");
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private static ASTNode processHtmlFile(CharStream input) {
-        HTMLWithCSSLexer lexer = new HTMLWithCSSLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        HTMLWithCSSParser parser = new HTMLWithCSSParser(tokens);
-        parser.removeErrorListeners();
-        ParseTree tree = parser.htmlDocument();
-        ASTNode ast = (new HtmlWithCssVisitorClass()).visit(tree);
+    private static void processHtmlFile(Path filePath) {
+        String fileName = filePath.getFileName().toString();
+        symbolTable.setCurrentFileOrigin(fileName);  // NEW
+        System.out.println("\n--- " + fileName + " ---");
 
-        symbolTable.clear();
-        labelTable.clear();
-        ast.accept(new SymbolTableVisitor(symbolTable, labelTable));
+        try {
+            CharStream input = CharStreams.fromPath(filePath);
+            HTMLWithCSSLexer lexer = new HTMLWithCSSLexer(input);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            HTMLWithCSSParser parser = new HTMLWithCSSParser(tokens);
+            parser.removeErrorListeners();
+            ParseTree tree = parser.htmlDocument();
+            ASTNode ast = (new HtmlWithCssVisitorClass()).visit(tree);
 
-        System.out.println("\nSymbol Table:");
-        symbolTable.print();
+            // HTML enters its own scope so CSS classes don't pollute global Python scope
+            symbolTable.enterScope("html_" + fileName);
+            labelTable.clear();  // Labels can be fresh per HTML file
 
-        System.out.println("\nLabel Table:");
-        labelTable.print();
-        System.out.println();
+            ast.accept(new DefinitionVisitor(symbolTable, labelTable));
 
-        return ast;
-    }
+            System.out.println("\nSymbol Table (HTML + inherited Python):");
+            symbolTable.printScopeTree();
 
-    private static ASTNode processPythonFile(CharStream input) {
-        pythonLexer lexer = new pythonLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        pythonParser parser = new pythonParser(tokens);
-        parser.removeErrorListeners();
-        ParseTree tree = parser.program();
-        PythonASTBuilderVisitor builder = new PythonASTBuilderVisitor();
-        ASTNode ast = builder.visit(tree);
+            System.out.println("\nLabel Table:");
+            labelTable.print();
 
-        // Reset tables for each Python file
-        symbolTable.clear();
-        labelTable.clear();
-        ast.accept(new SymbolTableVisitor(symbolTable, labelTable));
+            System.out.println("\nAST:");
+            printAst(ast);
 
-        System.out.println("\nSymbol Table:");
-        symbolTable.print();
+            // Exit HTML scope so next HTML file starts fresh
+            symbolTable.exitScope();
 
-        System.out.println("\nLabel Table:");
-        labelTable.print();
+            printCssDetails(ast, fileName);
 
-        return ast;
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private static void printAst(ASTNode node) {
         printAst(node, "", true);
     }
+
     private static void printAst(ASTNode node, String prefix, boolean isLast) {
         if (node == null) return;
 
@@ -214,7 +215,7 @@ public class Main {
 
         // Jinja
         if (node instanceof JinjaBlockNode j) {
-            return "JINJA block: " + j.getName();
+            return "JINJA block: " + j.getJinjaType();
         }
 
         if (node instanceof JinjaExpressionNode) {
@@ -236,7 +237,7 @@ public class Main {
 
 
         if (node instanceof ParameterNode) {
-            return "Parameter: " +  ((ParameterNode) node).getName();
+            return "Parameter: " + ((ParameterNode) node).getName();
         }
 
         if (node instanceof ComparisonNode c) {
@@ -249,23 +250,23 @@ public class Main {
 
 
         // Core
-        if(node instanceof IdentifierNode) {
+        if (node instanceof IdentifierNode) {
             return "Identifier: " + ((IdentifierNode) node).getName();
         }
 
-        if(node instanceof StringLiteralNode) {
+        if (node instanceof StringLiteralNode) {
             return "String: " + ((StringLiteralNode) node).getValue();
         }
 
-        if(node instanceof NumberLiteralNode) {
+        if (node instanceof NumberLiteralNode) {
             return "Number: " + ((NumberLiteralNode) node).getValue();
         }
 
-        if(node instanceof BooleanLiteralNode) {
+        if (node instanceof BooleanLiteralNode) {
             return "Boolean: " + ((BooleanLiteralNode) node).getValue();
         }
 
-        if(node instanceof NoneLiteralNode) {
+        if (node instanceof NoneLiteralNode) {
             return "None";
         }
 

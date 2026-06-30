@@ -1,31 +1,22 @@
-// semantics/SemanticAnalyzer.java
 package semantics;
 
 import ast.core.ASTNode;
+import ast.core.ProgramNode;
 import table.LabelTable;
 import table.SymbolTable;
 import visitors.DefinitionVisitor;
 import visitors.TypeCheckVisitor;
 
-public class SemanticAnalyzer {
+class SemanticAnalyzer {
 
-    public SemanticError analyze(ASTNode root) {
+    public void analyze(ASTNode root) {
+
         SymbolTable symbolTable = new SymbolTable();
-        LabelTable labelTable = new LabelTable();
 
-        FlaskBuiltins.populate(symbolTable);   // ← Important
+        // Pass 1
+        new DefinitionVisitor(symbolTable, new LabelTable()).visit((ProgramNode) root);
 
-        // Pass 1: Definition + Scope building
-        DefinitionVisitor defVisitor = new DefinitionVisitor(symbolTable, labelTable);
-        root.accept(defVisitor);
-
-        // Pass 2: Name resolution + Type checking (to be implemented)
-        TypeCheckVisitor typeChecker = new TypeCheckVisitor(symbolTable);
-        typeChecker.visit(root);
-
-        SemanticError errorReporter = new SemanticError();
-        // TODO: collect errors from typeChecker
-
-        return errorReporter;
+        // Pass 2
+        new TypeCheckVisitor(symbolTable).visit(root);
     }
 }

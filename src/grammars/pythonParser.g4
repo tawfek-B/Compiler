@@ -194,7 +194,6 @@ atom
 //     ;
 
 // List comprehension
-// Replace your current listComp rule with these:
 
 comp
     : FOR ID IN expr (IF expr)?        #comprehension

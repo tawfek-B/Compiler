@@ -4,92 +4,122 @@ import java.util.*;
 
 public class SymbolTable {
 
-    private final Map<String, List<SymbolRow>> scopes = new LinkedHashMap<>();
-    private final Deque<String> scopeStack = new ArrayDeque<>();
+    public Scope currentScope;
+    private Scope globalScope;
+    private String currentFileOrigin = "unknown";  // NEW: track which file we're processing
 
     public SymbolTable() {
-        enterScope("global");
+        globalScope = new Scope("global", null);
+        currentScope = globalScope;
     }
 
-    //Scope Management
+    // NEW: Set the current file origin before processing a file
+    public void setCurrentFileOrigin(String fileOrigin) {
+        this.currentFileOrigin = fileOrigin != null ? fileOrigin : "unknown";
+    }
+
+    public String getCurrentFileOrigin() {
+        return currentFileOrigin;
+    }
 
     public void enterScope(String scopeName) {
-        scopeStack.push(scopeName);
-        scopes.putIfAbsent(scopeName, new ArrayList<>());
+        currentScope = new Scope(scopeName, currentScope);
     }
 
     public void exitScope() {
-        if (scopeStack.size() > 1) {
-            scopeStack.pop();
+        if (currentScope.getParent() != null) {
+            currentScope = currentScope.getParent();
         }
     }
 
-    public String getCurrentScope() {
-        return scopeStack.peek();
+    public void exitAllScopes() {
+        while (currentScope.getParent() != null) {
+            currentScope = currentScope.getParent();
+        }
     }
 
-    //Symbol Management
+    public Scope getCurrentScope() { return currentScope; }
+    public Scope getGlobalScope() { return globalScope; }
 
-    public SymbolRow addSymbol(
-            String name,
-            String type,
-            String value,
-            int line,
-            int column
-    ) {
-        SymbolRow row = new SymbolRow(
-                name,
-                type,
-                value,
-                line,
-                column,
-                getCurrentScope()
-        );
-
-        scopes.get(getCurrentScope()).add(row);
-        return row;
+    public boolean define(Symbol symbol) {
+        return currentScope.define(symbol);
     }
 
-    public boolean existsInCurrentScope(String name) {
-        return scopes.get(getCurrentScope())
-                .stream()
-                .anyMatch(s -> s.getName().equals(name));
+    // NEW: Convenience method that auto-sets file origin
+    public boolean defineWithOrigin(Symbol symbol) {
+        // If symbol was created without file origin, wrap it with current origin
+        if ("unknown".equals(symbol.getFileOrigin()) && !"unknown".equals(currentFileOrigin)) {
+            symbol = new Symbol(
+                    symbol.getName(),
+                    symbol.getType(),
+                    symbol.getKind(),
+                    symbol.getLine(),
+                    symbol.getColumn(),
+                    currentFileOrigin
+            );
+        }
+        return currentScope.define(symbol);
     }
 
-    public SymbolRow lookup(String name) {
-        for (String scope : scopeStack) {
-            for (SymbolRow row : scopes.get(scope)) {
-                if (row.getName().equals(name)) {
-                    return row;
-                }
-            }
+    public Symbol resolve(String name) {
+        Scope scope = currentScope;
+        while (scope != null) {
+            Symbol symbol = scope.resolveLocal(name);
+            if (symbol != null) return symbol;
+            scope = scope.getParent();
         }
         return null;
     }
 
-    public List<SymbolRow> getSymbolsInScope(String scope) {
-        return scopes.getOrDefault(scope, List.of());
+    public Symbol resolveLocal(String name) {
+        return currentScope.resolveLocal(name);
     }
 
-    public Map<String, List<SymbolRow>> getAllScopes() {
-        return scopes;
+    public boolean existsInCurrentScope(String name) {
+        return currentScope.resolveLocal(name) != null;
     }
 
+    // FIXED: Properly reset the entire scope tree
     public void clear() {
-        scopes.clear();
-        scopeStack.clear();
-        enterScope("global");
+        // Orphan all child scopes by clearing the global's children list
+        // Then create a fresh global scope so old references are truly discarded
+        globalScope = new Scope("global", null);
+        currentScope = globalScope;
     }
 
-    //Print
+    public void printScopeTree() {
+        System.out.println("\n===== SYMBOL TABLE (Complete Scope Tree) =====\n");
+        printScopeRecursive(globalScope, 0);
+    }
 
-    public void print() {
-        System.out.println("\n=========== SYMBOL TABLE ===========\n");
-        for (Map.Entry<String, List<SymbolRow>> entry : scopes.entrySet()) {
-            System.out.println("Scope: " + entry.getKey());
-            System.out.println("-".repeat(80));
-            entry.getValue().forEach(System.out::println);
+    private void printScopeRecursive(Scope scope, int depth) {
+        String indent = "  ".repeat(depth);
+        System.out.println(indent + "┌─ Scope: " + scope.getName());
+        System.out.println(indent + "│  " + "-".repeat(70));
+
+        if (scope.getSymbols().isEmpty()) {
+            System.out.println(indent + "│  (empty)");
+        } else {
+            for (Symbol sym : scope.getSymbols().values()) {
+                System.out.println(indent + "│  " + sym);
+            }
+        }
+        System.out.println(indent + "└" + "─".repeat(72));
+
+        for (Scope child : scope.getChildren()) {
+            printScopeRecursive(child, depth + 1);
+        }
+    }
+
+    public void printCurrentScopeChain() {
+        Scope scope = currentScope;
+        System.out.println("\n===== SYMBOL TABLE (Active Scope Chain) =====\n");
+        while (scope != null) {
+            System.out.println("Scope: " + scope.getName());
+            System.out.println("-".repeat(90));
+            scope.getSymbols().values().forEach(System.out::println);
             System.out.println();
+            scope = scope.getParent();
         }
     }
 }

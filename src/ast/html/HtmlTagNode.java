@@ -19,6 +19,8 @@ public class HtmlTagNode extends HtmlNode {
     public void addAttribute(HtmlAttributeNode attribute) {
         attributes.add(attribute);
         add(attribute); // add to children
+        attribute.setParent(this);
+//        System.out.println(attribute.getParent() + "\tLLOl\t" + attribute.getLine());
     }
 
     public List<HtmlAttributeNode> getAttributes() { return attributes; }
@@ -29,6 +31,16 @@ public class HtmlTagNode extends HtmlNode {
 
     public List<ASTNode> getChildren() {
         return super.getChildren(); // already includes attributes + body
+    }
+
+    @Override
+    public String toString() {
+        String node = "<" + tagName + ">\n\t";
+        for (HtmlAttributeNode attribute : attributes) {
+            node += "\n\t";
+            node += (attribute.getName() + ": " + attribute.getValue());
+        }
+        return node;
     }
 
     @Override

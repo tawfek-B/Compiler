@@ -8,26 +8,31 @@ import ast.css.*;
 import ast.html.*;
 import ast.jinja.*;
 import ast.python.AttributeAccessNode;
+import ast.python.KeywordArgumentNode;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.antlr.v4.runtime.ParserRuleContext;
+import ast.jinja.JinjaBlockNode.BlockType;
 import table.LabelTable;
 import table.SymbolTable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+
+import static ast.jinja.JinjaBlockNode.BlockType.*;
 
 public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNode> {
 
 
     // safe visit for all nodes
     @SuppressWarnings("Unchecked")
-    private <T extends ASTNode> T safeVisit(org.antlr.v4.runtime.tree.ParseTree ctx){
-        if(ctx == null) return null;
+    private <T extends ASTNode> T safeVisit(org.antlr.v4.runtime.tree.ParseTree ctx) {
+        if (ctx == null) return null;
         ASTNode node = visit(ctx);
 
-        if(node == null){
-            System.out.println("Warning: visit returned null for: "+ ctx.getText());
+        if (node == null) {
+            System.out.println("Warning: visit returned null for: " + ctx.getText());
         }
         return (T) node;
     }
@@ -131,18 +136,26 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
             HtmlAttributeNode attrNode = new HtmlAttributeNode(name, "", line1, column1);
 
             if (rawValue.contains("{{")) {
+
                 String[] parts = rawValue.split("(?=\\{\\{)|(?<=\\}\\})");
 
                 for (String part : parts) {
+
                     part = part.trim();
+                    if (part.isEmpty()) continue;
+
                     if (part.startsWith("{{") && part.endsWith("}}")) {
+
                         String inner = part.substring(2, part.length() - 2).trim();
                         ASTNode expr = parseJinjaExpression(inner, line1, column1);
+
                         attrNode.add(new JinjaExpressionNode(expr, line1, column1));
-                    } else if (!part.isEmpty()) {
+
+                    } else {
                         attrNode.add(new HtmlTextNode(part, line1, column1));
                     }
                 }
+
             } else {
                 attrNode.setValue(rawValue);
             }
@@ -194,7 +207,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
                     if (part.startsWith("{{") && part.endsWith("}}")) {
                         String inner = part.substring(2, part.length() - 2).trim();
                         ASTNode expr = parseJinjaExpression(inner, line1, column1);
-                        attrNode.add(new JinjaExpressionNode(expr,line1,column1));
+                        attrNode.add(new JinjaExpressionNode(expr, line1, column1));
                     } else if (!part.isEmpty()) {
                         attrNode.add(new HtmlTextNode(part, line1, column1));
                     }
@@ -212,9 +225,9 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
     @Override
     public ASTNode visitScriptTag(HTMLWithCSSParser.ScriptTagContext ctx) {
         Token start = ctx.SCRIPT_OPEN().getSymbol();
-        HtmlTagNode node = new HtmlTagNode("script", start.getLine(),  start.getCharPositionInLine());
+        HtmlTagNode node = new HtmlTagNode("script", start.getLine(), start.getCharPositionInLine());
         String body = ctx.SCRIPT_BODY() != null ? ctx.SCRIPT_BODY().getText() : ctx.SCRIPT_SHORT_BODY().getText();
-        node.add(new HtmlTextNode(body, start.getLine(),  start.getCharPositionInLine()));
+        node.add(new HtmlTextNode(body, start.getLine(), start.getCharPositionInLine()));
         return node;
     }
 
@@ -264,20 +277,20 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
     public ASTNode visitRuleset(HTMLWithCSSParser.RulesetContext ctx) {
         CssRuleNode rule = new CssRuleNode(ctx.start.getLine(), ctx.getStart().getCharPositionInLine());
         StringBuilder selectorText = new StringBuilder();
-        if(ctx.combined_selector(0) != null && ctx.combined_selector(0).selector(0) != null && ctx.combined_selector(0).selector(0).selpart(0) != null)
-             selectorText = new StringBuilder(ctx.combined_selector(0).selector(0).selpart(0).CLASSKEYWORD().getText());
+        if (ctx.combined_selector(0) != null && ctx.combined_selector(0).selector(0) != null && ctx.combined_selector(0).selector(0).selpart(0) != null)
+            selectorText = new StringBuilder(ctx.combined_selector(0).selector(0).selpart(0).CLASSKEYWORD().getText());
         else
             selectorText = new StringBuilder(ctx.combined_selector(0).selector(0).getText());   //this will fix any selectors that don't have . like body
         // Selectors
         for (HTMLWithCSSParser.Combined_selectorContext selCtx : ctx.combined_selector()) {
-            if(selCtx.selector(0) != null && selCtx.selector(0).selpart(0) != null && selCtx.selector(0).selpart(0).CLASSKEYWORD() != null) {
-                for(int i = 1; i < selCtx.selector().size(); i++) {
-                if(selCtx.selector(i) != null)
-                    selectorText.append(" ").append(selCtx.selector(i).getText());
+            if (selCtx.selector(0) != null && selCtx.selector(0).selpart(0) != null && selCtx.selector(0).selpart(0).CLASSKEYWORD() != null) {
+                for (int i = 1; i < selCtx.selector().size(); i++) {
+                    if (selCtx.selector(i) != null)
+                        selectorText.append(" ").append(selCtx.selector(i).getText());
                 }
             }
 
-            CssSelectorNode selectorNode = new CssSelectorNode(selectorText.toString(), selCtx.start.getLine(),  selCtx.start.getCharPositionInLine());
+            CssSelectorNode selectorNode = new CssSelectorNode(selectorText.toString(), selCtx.start.getLine(), selCtx.start.getCharPositionInLine());
             rule.addSelector(selectorNode);
         }
 
@@ -294,9 +307,51 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         return rule;
     }
 
+    private boolean needsSpace(
+            StringBuilder sb,
+            String next
+    ) {
+
+        if (sb.isEmpty()) return false;
+
+        char last = sb.charAt(sb.length() - 1);
+
+        if (last == '(' || last == '/' || last == ',') {
+            return false;
+        }
+
+        if (next.equals(")") || next.equals(",")) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private String rebuildCssValue(
+            HTMLWithCSSParser.TermsContext ctx
+    ) {
+
+        if (ctx == null) return "";
+
+        StringBuilder sb = new StringBuilder();
+
+        for (var child : ctx.children) {
+
+            String text = child.getText();
+
+            if (needsSpace(sb, text)) {
+                sb.append(" ");
+            }
+
+            sb.append(text);
+        }
+
+        return sb.toString().trim();
+    }
+
     public ASTNode visitDeclaration(HTMLWithCSSParser.DeclarationContext ctx) {
         String property = ctx.IDENT().getText();
-        String value = ctx.terms() != null ? ctx.terms().getText() : "";
+        String value = rebuildCssValue(ctx.terms());
         boolean important = ctx.IMPORTANT() != null;
 
         CssDeclarationNode node = new CssDeclarationNode(property, value, important, ctx.start.getLine(), ctx.start.getCharPositionInLine());
@@ -350,7 +405,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
             }
             return media;
 
-        }else if (ctx.FONTFACE() != null) {
+        } else if (ctx.FONTFACE() != null) {
             CssAtRuleNode fontFace = new CssAtRuleNode("font-face", "", line, column);
 
             if (ctx.declarations() != null) {
@@ -360,9 +415,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
                 }
             }
             return fontFace;
-        }
-
-        else if (ctx.PAGE() != null) {
+        } else if (ctx.PAGE() != null) {
             String pseudo = ctx.pseudo() != null ? ctx.pseudo().getText() : "";
             CssAtRuleNode page = new CssAtRuleNode("page", pseudo, line, column);
 
@@ -402,32 +455,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         HtmlTextNode node = new HtmlTextNode(ctx.getText(), t.getLine(), t.getCharPositionInLine());
         return node;
     }
-
-    // === Jinja ===
-
-    private ASTNode parseJinjaExpression(String rawExpr, int line, int column) {
-        rawExpr = rawExpr.trim();
-
-        if (rawExpr.contains(".")) {
-            // product.name → AttributeAccess
-            String[] parts = rawExpr.split("\\.");
-            ExpressionNode current = new IdentifierNode(parts[0], line, column);
-
-            for (int i = 1; i < parts.length; i++) {
-                current = new AttributeAccessNode(current, parts[i], line, column);
-            }
-            return current;
-        }
-
-        if (rawExpr.contains("(")) {
-            // Simple function call like url_for(...)
-            return new IdentifierNode(rawExpr, line, column); // can be enhanced later
-        }
-
-        return new IdentifierNode(rawExpr, line, column);
-    }
-
-//    private ExpressionNode parseSimpleTerm(String term, int line, int column) {
+    //    private ExpressionNode parseSimpleTerm(String term, int line, int column) {
 //        term = term.trim();
 //
 //
@@ -466,53 +494,156 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         String content = ctx.JINJA_EXPR_CONTENT().getText().trim();
         ASTNode parsedExpr = parseJinjaExpression(content, line, column);
 
-        JinjaExpressionNode node = new JinjaExpressionNode(parsedExpr, line, column);
-        return node;
+        return new JinjaExpressionNode(parsedExpr, line, column);
     }
 
 
     @Override
     public ASTNode visitJinjaBlockTag(HTMLWithCSSParser.JinjaBlockTagContext ctx) {
         Token t = ctx.JINJA_BLOCK_OPEN().getSymbol();
-        String rawContent = ctx.JINJA_BLOCK_CONTENT().getText().trim();
+        String raw = ctx.JINJA_BLOCK_CONTENT().getText().trim();
 
-        String blockName;
+        // ================= IF =================
+        if (raw.startsWith("if ")) {
 
-        if (rawContent.startsWith("if ")) {
-            blockName = "if";
-        }
-        else if (rawContent.startsWith("for ")) {
-            blockName = "for";
-        }
-        else if (rawContent.startsWith("with ")) {
-            blockName = "with";
-        }
-        else if (rawContent.startsWith("block ")) {
-            String after = rawContent.substring(6).trim();
-            int space = after.indexOf(' ');
-            String name = (space != -1) ? after.substring(0, space) : after;
-            blockName = "block:" + name;
-        }
-        else if (rawContent.equals("else")) {
-            blockName = "else";
-        }
-        else if (rawContent.startsWith("endif")) {
-            blockName = "endif";
-        }
-        else if (rawContent.startsWith("endfor")) {
-            blockName = "endfor";
-        }
-        else if (rawContent.startsWith("endwith")) {
-            blockName = "endwith";
-        }
-        else if (rawContent.startsWith("endblock")) {
-            blockName = "endblock";
-        }
-        else {
-            blockName = "unknown";
+            String conditionText = raw.substring(3).trim();
+
+            ASTNode condition = parseJinjaExpression(
+                    conditionText,
+                    t.getLine(),
+                    t.getCharPositionInLine()
+            );
+
+            return JinjaBlockNode.ifBlock(
+                    condition,
+                    conditionText,
+                    t.getLine(),
+                    t.getCharPositionInLine()
+            );
         }
 
-        return new JinjaBlockNode(blockName, t.getLine(), t.getCharPositionInLine());
+        // ================= BLOCK =================
+
+        if (raw.startsWith("block ")) {
+
+            String name = raw.substring(6).trim();
+
+            IdentifierNode blockName = new IdentifierNode(name, t.getLine(), t.getCharPositionInLine());
+
+            return JinjaBlockNode.namedBlock(blockName, t.getLine(), t.getCharPositionInLine());
+        }
+
+        // ================= FOR =================
+        if (raw.startsWith("for ")) {
+
+            String expr = raw.substring(4).trim();
+
+            int inIndex = expr.indexOf(" in ");
+
+            if (inIndex == -1) {
+                return null;
+            }
+
+            String left = expr.substring(0, inIndex).trim();
+            String right = expr.substring(inIndex + 4).trim();
+
+            ASTNode iterable =
+                    parseJinjaExpression(
+                            right,
+                            t.getLine(),
+                            t.getCharPositionInLine()
+                    );
+
+            ExpressionNode variable;
+
+            if (left.contains(",")) {
+
+                TupleExpressionNode tuple =
+                        new TupleExpressionNode(
+                                t.getLine(),
+                                t.getCharPositionInLine()
+                        );
+
+                for (String part : left.split(",")) {
+
+                    tuple.addElement(
+                            new IdentifierNode(
+                                    part.trim(),
+                                    t.getLine(),
+                                    t.getCharPositionInLine()
+                            )
+                    );
+                }
+
+                variable = tuple;
+            } else {
+
+                variable =
+                        new IdentifierNode(
+                                left,
+                                t.getLine(),
+                                t.getCharPositionInLine()
+                        );
+            }
+
+            JinjaBlockNode node = JinjaBlockNode.forBlock(variable, iterable, expr, t.getLine(), t.getCharPositionInLine());
+
+            node.setCondition(variable);
+
+            return node;
+        }
+
+        // ================= WITH =================
+        if (raw.startsWith("with ")) {
+
+            String expr = raw.substring(5).trim();
+
+            List<JinjaWithAssignmentNode> assignments = new ArrayList<>();
+
+            for (String part : splitTopLevel(expr, ',')) {
+
+
+                int eq = findTopLevelAssignment(part);
+
+                if (eq == -1) continue;
+
+                String name = part.substring(0, eq).trim();
+                String value = part.substring(eq + 1).trim();
+
+                assignments.add(
+                        new JinjaWithAssignmentNode(
+                                name,
+                                (ExpressionNode) parseJinjaExpression(value, t.getLine(), t.getCharPositionInLine()),
+                                t.getLine(),
+                                t.getCharPositionInLine()
+                        )
+                );
+            }
+
+            return JinjaBlockNode.withBlock(assignments, t.getLine(), t.getCharPositionInLine());
+        }
+        // ================= ELSE =================
+
+        if (raw.startsWith("else")) {
+            return new JinjaElseNode(t.getLine(), t.getCharPositionInLine());
+        }
+
+        // ================= EXTENDS =================
+        if (raw.startsWith("extends")) {
+
+            String expr = raw.substring(8).trim();
+
+            ASTNode template = parseJinjaExpression(expr, t.getLine(), t.getCharPositionInLine());
+
+            return new JinjaExtendNode(template, expr, t.getLine(), t.getCharPositionInLine());
+        }
+
+        // ================= END =================
+        if (raw.startsWith("end")) {
+            return new JinjaEndNode(raw, t.getLine(), t.getCharPositionInLine());
+        }
+
+        return null;
     }
 
     @Override
@@ -529,23 +660,29 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         return node;
     }
 
-
     @Override
     public ASTNode visitHtmlContentBlock(HTMLWithCSSParser.HtmlContentBlockContext ctx) {
+
         DummyNode root = new DummyNode(0, 0);
         Stack<JinjaBlockNode> stack = new Stack<>();
 
         for (int i = 0; i < ctx.getChildCount(); i++) {
-            var child = ctx.getChild(i);
+
             ASTNode node = null;
+            var child = ctx.getChild(i);
 
             if (child instanceof ParserRuleContext ruleCtx) {
                 node = safeVisit(ruleCtx);
-            }
-            else if (child instanceof TerminalNode terminal) {
+
+            } else if (child instanceof TerminalNode terminal) {
+
                 int type = terminal.getSymbol().getType();
-                if (type == HTMLWithCSSLexer.HTML_TEXT || type == HTMLWithCSSLexer.SEA_WS) {
+
+                if (type == HTMLWithCSSLexer.HTML_TEXT ||
+                        type == HTMLWithCSSLexer.SEA_WS) {
+
                     String text = terminal.getText();
+
                     if (!text.trim().isEmpty() || text.contains("\n")) {
                         node = new HtmlTextNode(
                                 text,
@@ -558,44 +695,64 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
 
             if (node == null) continue;
 
-            // === JINJA BLOCK LOGIC ===
-            if (node instanceof JinjaBlockNode jinjaNode) {
-                String name = jinjaNode.getName();
-
-                // END blocks
-                if (name.startsWith("end")) {
-                    if (!stack.isEmpty()) {
-                        JinjaBlockNode completed = stack.pop();
-
-                        if (stack.isEmpty()) {
-                            root.add(completed);
-                        } else {
-                            stack.peek().add(completed);
-                        }
-                    }
-                    continue;
+            // ELSE
+            if (node instanceof JinjaElseNode) {
+                if (!stack.isEmpty() && stack.peek().getJinjaType() == IF) {
+                    stack.peek().setElseBlock((JinjaElseNode) node);
                 }
-
-                // ELSE block
-                if (name.equals("else")) {
-                    if (!stack.isEmpty()) {
-                        stack.peek().add(jinjaNode);
-                        stack.push(jinjaNode);
-                    }
-                    continue;
-                }
-
-                // START block
-                stack.push(jinjaNode);
                 continue;
             }
 
-            // NORMAL NODE
-            if (stack.isEmpty()) {
-                root.add(node);
-            } else {
-                stack.peek().add(node);
+            // ENDif (isFunctionCall(rawExpr)) {
+            //
+            //    int parenIndex = rawExpr.indexOf('(');
+            //    String funcName = rawExpr.substring(0, parenIndex).trim();
+            //
+            //    int closeIndex = findMatchingParen(rawExpr, parenIndex);
+            //    if (closeIndex == -1) {
+            //        return new IdentifierNode(rawExpr, line, column);
+            //    }
+            //
+            //    String argsText = rawExpr.substring(parenIndex + 1, closeIndex).trim();
+            //
+            //    IdentifierNode callee = new IdentifierNode(funcName, line, column);
+            //
+            //    List<ExpressionNode> args = new ArrayList<>();
+            //
+            //    if (!argsText.isEmpty()) {
+            //        args = parseArguments(argsText, line, column);
+            //    }
+            //
+            //    return new CallExpressionNode(callee, args, line, column);
+            //}
+            if (node instanceof JinjaEndNode end) {
+                while (!stack.isEmpty()) {
+                    JinjaBlockNode top = stack.pop();
+                    if (matches(top, end)) break;
+                }
+                continue;
             }
+
+            // BLOCKS
+            if (node instanceof JinjaBlockNode block) {
+
+                switch (block.getJinjaType()) {
+
+                    case IF, FOR, BLOCK -> {
+                        attach(root, stack, block);
+                        stack.push(block);
+                    }
+
+                    case WITH -> {
+                        // ✔ FIX: treat as scope marker only (not structural block)
+                        attach(root, stack, block);
+                    }
+                }
+
+                continue;
+            }
+
+            attach(root, stack, node);
         }
 
         return root;
@@ -609,6 +766,334 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
             return s.substring(1, s.length() - 1);
         }
         return s;
+    }
+
+    private void attach(DummyNode root,
+                        Stack<JinjaBlockNode> stack,
+                        ASTNode node) {
+
+        if (!stack.isEmpty()) {
+
+            JinjaBlockNode parent = stack.peek();
+            parent.add(node);
+
+        } else {
+
+            root.add(node);
+        }
+    }
+
+    private boolean matches(JinjaBlockNode block, JinjaEndNode end) {
+
+        String raw = end.getRaw().trim();
+
+        return switch (block.getJinjaType()) {
+            case IF -> raw.startsWith("endif") || raw.startsWith("end if");
+            case FOR -> raw.startsWith("endfor") || raw.startsWith("end for");
+            case WITH -> raw.startsWith("endwith") || raw.startsWith("end with");
+            case BLOCK -> raw.startsWith("endblock") || raw.startsWith("end block");
+        };
+    }
+
+    private int findTopLevelAssignment(String expr) {
+        int depth = 0;
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+
+        for (int i = 0; i < expr.length(); i++) {
+            char c = expr.charAt(i);
+
+            // toggle quotes
+            if (c == '\'' && !inDoubleQuote) inSingleQuote = !inSingleQuote;
+            else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
+
+            if (inSingleQuote || inDoubleQuote) continue;
+
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+
+            if (c == '=' && depth == 0) {
+
+                char prev = (i > 0) ? expr.charAt(i - 1) : '\0';
+                char next = (i + 1 < expr.length()) ? expr.charAt(i + 1) : '\0';
+
+                // skip ==, !=, <=, >=
+                if (prev == '=' || prev == '!' || prev == '<' || prev == '>') continue;
+                if (next == '=') continue;
+
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private int findMatchingParen(String s, int start) {
+        int depth = 0;
+
+        for (int i = start; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+
+            if (depth == 0) return i;
+        }
+
+        return -1;
+    }
+
+    private boolean isFunctionCall(String expr) {
+        expr = expr.trim();
+
+        int open = expr.indexOf('(');
+        if (open <= 0) return false;
+
+        if (!expr.endsWith(")")) return false;
+
+        int close = findMatchingParen(expr, open);
+        return close == expr.length() - 1;
+    }
+
+    private List<String> splitTopLevel(String text, char delimiter) {
+
+        List<String> parts = new ArrayList<>();
+
+        int depth = 0;
+        StringBuilder current = new StringBuilder();
+
+        for (int i = 0; i < text.length(); i++) {
+
+            char c = text.charAt(i);
+
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+
+            if (c == delimiter && depth == 0) {
+                parts.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+
+        if (!current.isEmpty()) {
+            parts.add(current.toString());
+        }
+
+        return parts;
+    }
+
+    private int findTopLevelDot(String expr) {
+
+        int parenDepth = 0;
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+
+        for (int i = 0; i < expr.length(); i++) {
+
+            char c = expr.charAt(i);
+
+            if (c == '\'' && !inDoubleQuote) {
+                inSingleQuote = !inSingleQuote;
+                continue;
+            }
+
+            if (c == '"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+                continue;
+            }
+
+            if (inSingleQuote || inDoubleQuote) {
+                continue;
+            }
+
+            if (c == '(') {
+                parenDepth++;
+                continue;
+            }
+
+            if (c == ')') {
+                parenDepth--;
+                continue;
+            }
+
+            if (c == '.' && parenDepth == 0) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private List<ExpressionNode> parseArguments(String text, int line, int column) {
+
+        List<ExpressionNode> args = new ArrayList<>();
+
+        for (String part : splitTopLevel(text, ',')) {
+
+            part = part.trim();
+            if (part.isEmpty()) continue;
+
+            int eq = findTopLevelAssignment(part);
+
+            if (eq != -1) {
+
+                String name = part.substring(0, eq).trim();
+                String value = part.substring(eq + 1).trim();
+
+                ExpressionNode valueNode =
+                        (ExpressionNode) parseJinjaExpression(value, line, column);
+
+                args.add(new KeywordArgumentNode(
+                        name,
+                        valueNode,
+                        line,
+                        column
+                ));
+
+            } else {
+
+                ASTNode parsed = parseJinjaExpression(part, line, column);
+
+                if (parsed instanceof ExpressionNode expr) {
+                    args.add(expr);
+                }
+            }
+        }
+
+        return args;
+    }
+
+    private List<ExpressionNode> parseArguments(String text, int line, int column, boolean allowAssignment) {
+
+        List<ExpressionNode> args = new ArrayList<>();
+
+        for (String part : splitTopLevel(text, ',')) {
+
+            part = part.trim();
+            if (part.isEmpty()) continue;
+
+            int eq = allowAssignment ? findTopLevelAssignment(part) : -1;
+
+            if (eq != -1) {
+
+                String name = part.substring(0, eq).trim();
+                String value = part.substring(eq + 1).trim();
+
+                ASTNode valueNode = parseJinjaExpression(value, line, column);
+
+                if (valueNode instanceof ExpressionNode expr) {
+                    args.add(new KeywordArgumentNode(name, expr, line, column));
+                }
+
+            } else {
+
+                ASTNode parsed = parseJinjaExpression(part, line, column);
+
+                if (parsed instanceof ExpressionNode expr) {
+                    args.add(expr);
+                }
+            }
+        }
+
+        return args;
+    }
+
+    public ExpressionNode parseSimpleJinjaExpression(String rawExpr, int line, int column) {
+        rawExpr = rawExpr.trim();
+
+        // STRING
+        if ((rawExpr.startsWith("'") && rawExpr.endsWith("'")) ||
+                (rawExpr.startsWith("\"") && rawExpr.endsWith("\""))) {
+
+            return new StringLiteralNode(stripQuotes(rawExpr), line, column);
+        }
+
+        // BOOLEAN (case-insensitive + Python-style)
+        if (rawExpr.equalsIgnoreCase("true") || rawExpr.equalsIgnoreCase("false")) {
+            return new BooleanLiteralNode(Boolean.parseBoolean(rawExpr.toLowerCase()), line, column);
+        }
+
+        // NUMBER
+        if (rawExpr.matches("-?\\d+(\\.\\d+)?")) {
+            return new NumberLiteralNode(rawExpr, line, column);
+        }
+
+        return new IdentifierNode(rawExpr, line, column);
+    }
+
+    private ASTNode parseJinjaExpression(String rawExpr, int line, int column) {
+
+        rawExpr = rawExpr.trim();
+
+        System.out.println("DEBUG parseJinjaExpression() → Input: '" + rawExpr + "'");
+
+        // ================= ASSIGNMENT =================
+        int assignIndex = findTopLevelAssignment(rawExpr);
+
+        if (assignIndex != -1) {
+
+            String left = stripQuotes(rawExpr.substring(0, assignIndex).trim());
+            String right = rawExpr.substring(assignIndex + 1).trim();
+
+            return new BinaryExpressionNode(
+                    new IdentifierNode(left, line, column),
+                    "=",
+                    (ExpressionNode) parseJinjaExpression(right, line, column),
+                    line,
+                    column
+            );
+        }
+
+        // ================= DOT ACCESS =================
+        int dot = findTopLevelDot(rawExpr);
+
+        if (dot != -1) {
+
+            String left = rawExpr.substring(0, dot).trim();
+            String right = rawExpr.substring(dot + 1).trim();
+
+            return new AttributeAccessNode(
+                    (ExpressionNode) parseJinjaExpression(left, line, column),
+                    right,
+                    line,
+                    column
+            );
+        }
+
+        // ================= FUNCTION CALL =================
+        if (isFunctionCall(rawExpr)) {
+
+            int parenIndex = rawExpr.indexOf('(');
+            String funcName = rawExpr.substring(0, parenIndex).trim();
+
+            int closeIndex = findMatchingParen(rawExpr, parenIndex);
+            if (closeIndex == -1) {
+                return new IdentifierNode(rawExpr, line, column);
+            }
+
+            String argsText = rawExpr.substring(parenIndex + 1, closeIndex).trim();
+
+            IdentifierNode callee = new IdentifierNode(funcName, line, column);
+
+            List<ExpressionNode> args = new ArrayList<>();
+
+            if (!argsText.isEmpty()) {
+                List<ExpressionNode> parsedArgs = parseArguments(argsText, line, column);
+
+                for (ExpressionNode arg : parsedArgs) {
+                    if (arg != null) {
+                        args.add(arg);
+                    }
+                }
+            }
+
+            return new CallExpressionNode(callee, args, line, column);
+
+        }
+
+        return parseSimpleJinjaExpression(rawExpr, line, column);
     }
 
     private static class DummyNode extends ASTNode {

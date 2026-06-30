@@ -18,6 +18,7 @@ public class CssMarginRuleNode extends CssNode {
 
     public void addDeclaration(CssDeclarationNode declaration) {
         declarations.add(declaration);
+        declaration.setParent(this);
     }
 
     public String getArea() {

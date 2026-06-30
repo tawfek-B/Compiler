@@ -1,36 +1,35 @@
 package ast.jinja;
 
 import ast.core.ASTVisitor;
+import ast.core.ExpressionNode;
 import ast.core.HtmlWithCssVisitor;
 
 public class JinjaIfNode extends JinjaNode {
 
-    private String condition;
-    private String body;
+    private ExpressionNode condition;
+    private JinjaNode thenBlock;
+    private JinjaNode elseBlock;
 
-    public JinjaIfNode(String condition, String body,  int line, int column) {
+    public JinjaIfNode(ExpressionNode condition, int line, int column) {
         super("Jinja If Node", line, column);
         this.condition = condition;
-        this.body = body;
     }
 
-    public String getCondition() {
-        return condition;
-    }
-    public String getBody() {
-        return body;
-    }
+    public ExpressionNode getCondition() { return condition; }
 
-    @Override
-    public String toString() {
-        return "JinjaIfNode: if " + condition + " then " + body;
-    }
+    public JinjaNode getThenBlock() { return thenBlock; }
+    public void setThenBlock(JinjaNode thenBlock) { this.thenBlock = thenBlock; }
+
+    public JinjaNode getElseBlock() { return elseBlock; }
+    public void setElseBlock(JinjaNode elseBlock) { this.elseBlock = elseBlock; }
 
     @Override
     public <T> T accept(ASTVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this);
     }
 
     @Override
-    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

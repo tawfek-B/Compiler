@@ -35,5 +35,5 @@ public class CssDeclarationNode extends CssNode {
     }
 
     @Override
-    public <T> T accept(ast.core.HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 }

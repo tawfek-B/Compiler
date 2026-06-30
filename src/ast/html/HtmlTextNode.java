@@ -28,5 +28,5 @@ public class HtmlTextNode extends HtmlNode {
     }
 
     @Override
-    public <T> T accept(ast.core.HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 }

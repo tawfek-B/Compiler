@@ -18,6 +18,7 @@ public class CssDocumentNode extends CssNode {
     public void addRule(CssRuleNode rule) {
         rules.add(rule);
         add(rule);
+        rule.setParent(this);
     }
 
     public List<CssRuleNode> getRules() {

@@ -17,9 +17,11 @@ public class CssKeyframeBlockNode extends CssNode {
 
     public void addSelector(CssKeyframeSelectorNode selector) {
         selectors.add(selector);
+        selector.setParent(this);
     }
     public void addDeclaration(CssKeyframeDeclarationNode declaration) {
         declarations.add(declaration);
+        declaration.setParent(this);
     }
 
     public List<ASTNode> getChildren() {
@@ -35,7 +37,7 @@ public class CssKeyframeBlockNode extends CssNode {
     }
 
     @Override
-    public <T> T accept(ast.core.HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
+    public <T> T accept(HtmlWithCssVisitor<T> visitor) { return visitor.visit(this); }
 
     @Override
     public String toString() {
