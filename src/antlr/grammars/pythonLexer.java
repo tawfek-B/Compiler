@@ -1,4 +1,4 @@
-// Generated from C:/Users/DELL/IdeaProjects/CompilerPractice/src/grammars/pythonLexer.g4 by ANTLR 4.13.2
+// Generated from C:/Users/Asus/ANTLR/Compiler/src/grammars/pythonLexer.g4 by ANTLR 4.13.2
 package antlr.grammars;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
@@ -53,7 +53,7 @@ public class pythonLexer extends Lexer {
 		return new String[] {
 			null, null, null, "'def'", "'return'", "'break'", "'pass'", "'continue'", 
 			"'if'", "'elif'", "'else'", "'while'", "'try'", "'finally'", "'except'", 
-			"'for'", "'in'", "'true'", "'false'", "'range'", "'import'", "'from'", 
+			"'for'", "'in'", "'True'", "'False'", "'range'", "'import'", "'from'", 
 			"'as'", "'global'", "'None'", "'is'", "'or'", "'and'", "'not'", "'@'", 
 			"'='", "'+'", "'-'", "'*'", "'/'", "'%'", "'+='", "'-='", "'*='", "'/='", 
 			"'%='", "'=='", "'!='", "'>='", "'<='", "'>'", "'<'", "'('", "')'", "'['", 
@@ -410,9 +410,9 @@ public class pythonLexer extends Lexer {
 		"\u00c4\u00c5\u0005f\u0000\u0000\u00c5\u00c6\u0005o\u0000\u0000\u00c6\u00c7"+
 		"\u0005r\u0000\u0000\u00c7\u001a\u0001\u0000\u0000\u0000\u00c8\u00c9\u0005"+
 		"i\u0000\u0000\u00c9\u00ca\u0005n\u0000\u0000\u00ca\u001c\u0001\u0000\u0000"+
-		"\u0000\u00cb\u00cc\u0005t\u0000\u0000\u00cc\u00cd\u0005r\u0000\u0000\u00cd"+
+		"\u0000\u00cb\u00cc\u0005T\u0000\u0000\u00cc\u00cd\u0005r\u0000\u0000\u00cd"+
 		"\u00ce\u0005u\u0000\u0000\u00ce\u00cf\u0005e\u0000\u0000\u00cf\u001e\u0001"+
-		"\u0000\u0000\u0000\u00d0\u00d1\u0005f\u0000\u0000\u00d1\u00d2\u0005a\u0000"+
+		"\u0000\u0000\u0000\u00d0\u00d1\u0005F\u0000\u0000\u00d1\u00d2\u0005a\u0000"+
 		"\u0000\u00d2\u00d3\u0005l\u0000\u0000\u00d3\u00d4\u0005s\u0000\u0000\u00d4"+
 		"\u00d5\u0005e\u0000\u0000\u00d5 \u0001\u0000\u0000\u0000\u00d6\u00d7\u0005"+
 		"r\u0000\u0000\u00d7\u00d8\u0005a\u0000\u0000\u00d8\u00d9\u0005n\u0000"+

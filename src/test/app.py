@@ -45,6 +45,22 @@ def add_product():
 
     return render_template("add.html")
 
+jinja = "jinja"
+jinja()
+jinjas()
+
+add_product("LOL", 2)
+
+render_template("template.html", jinja = jinja)
+render_template("templsate.html", jinja = jinja)
+def add_product():
+    return True
+def add_product():
+    return True
+
+
+
+
 # Optional: Delete product
 @app.route("/delete/<int:product_id>", methods=["POST"])
 def delete_product(product_id):
@@ -53,5 +69,29 @@ def delete_product(product_id):
     flash("Product deleted!", "success")
     return redirect(url_for("products_list"))
 
-if name == "main":
+if right == True:
+    print("lol")
+
+item = [1,2,3]
+
+print(5.length)
+
+if item:
+    print("lol")
+break
+continue
+
+x = "a" + 2
+
+value = "string"
+value = 2
+
+delete()
+
+for item in item:
+    for item in item:
+        continue
+        print("lol")
+
+if __name__ == "__main__":
     app.run(debug=True)

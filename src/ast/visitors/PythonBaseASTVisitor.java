@@ -59,6 +59,11 @@ public class PythonBaseASTVisitor<T> implements ASTVisitor<T> {
     }
 
     @Override
+    public T visit(AttributeAccessNode node) {
+        return null;
+    }
+
+    @Override
     public T visit(IdentifierNode node) {
         return null;
     }

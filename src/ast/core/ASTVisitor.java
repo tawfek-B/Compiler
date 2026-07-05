@@ -24,6 +24,8 @@ public interface ASTVisitor<T> {
     T visit(UnaryExpressionNode node);
     T visit(CallExpressionNode node);
 
+    T visit(AttributeAccessNode node);
+
     // Identifiers & Literals
     T visit(IdentifierNode node);
     T visit(NumberLiteralNode node);

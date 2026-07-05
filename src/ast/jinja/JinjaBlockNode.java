@@ -4,6 +4,7 @@ import ast.core.ASTNode;
 import ast.core.ASTVisitor;
 import ast.core.ExpressionNode;
 import ast.core.HtmlWithCssVisitor;
+import table.Scope;
 
 import java.util.List;
 
@@ -13,7 +14,8 @@ public class JinjaBlockNode extends ASTNode {
         IF,
         FOR,
         WITH,
-        BLOCK
+        BLOCK,
+        UNKNOWN
     }
 
     private final BlockType type;
@@ -35,6 +37,9 @@ public class JinjaBlockNode extends ASTNode {
     private String conditionText;
 
     private ASTNode elseBlock;
+
+    private Scope resolvedScope; // set by DefinitionVisitor for FOR/WITH blocks, reused by TypeCheckVisitor
+
 
 //    private final java.util.List<ASTNode> body = new java.util.ArrayList<>();
 
@@ -112,6 +117,16 @@ public class JinjaBlockNode extends ASTNode {
         return node;
     }
 
+    public static JinjaBlockNode unknownBlock(
+            ASTNode blockName,
+            int line,
+            int column
+    ) {
+        JinjaBlockNode node = new JinjaBlockNode(BlockType.UNKNOWN, line, column);
+        node.blockName = blockName;
+        return node;
+    }
+
     public BlockType getJinjaType() {
         return type;
     }
@@ -153,6 +168,14 @@ public class JinjaBlockNode extends ASTNode {
 
     public void setCondition(ASTNode condition) {
         this.condition = condition;
+    }
+
+    public Scope getResolvedScope() {
+        return resolvedScope;
+    }
+
+    public void setResolvedScope(Scope scope) {
+        this.resolvedScope = scope;
     }
 
     @Override

@@ -1,8 +1,12 @@
-{% extends "base.html" %}
+{% extends "template.html" %}
+{% extends "product.html" %}
 
 {% block title %}Add New Product{% endblock %}
 
 {% block content %}
+<!--{% with x = "lol" %}-->
+{{ x() }}
+<!--{% endwith %}-->
 <h1>Add New Product</h1>
 <form method="POST" style="max-width:500px;">
     <div style="margin-bottom:15px;">

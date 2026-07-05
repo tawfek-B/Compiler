@@ -20,7 +20,6 @@ public class HtmlTagNode extends HtmlNode {
         attributes.add(attribute);
         add(attribute); // add to children
         attribute.setParent(this);
-//        System.out.println(attribute.getParent() + "\tLLOl\t" + attribute.getLine());
     }
 
     public List<HtmlAttributeNode> getAttributes() { return attributes; }

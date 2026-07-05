@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
 
-app = Flask(name)
+app = Flask(__name__)
 app.secret_key = "super_secret_key"  # Needed for flash messages
 
 # In-memory storage (for demo – no real database)
@@ -58,6 +58,7 @@ def delete_product(product_id):
     products = [p for p in products if p["id"] != product_id]
     flash("Product deleted!", "success")
     return redirect(url_for("products_list"))
-
-if name == "main":
+if __name__ == "__main__":
     app.run(debug=True)
+for items in items:
+    print("lol")

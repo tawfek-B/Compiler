@@ -7,7 +7,7 @@ public class Symbol {
     protected final SymbolKind kind;
     protected final int line;
     protected final int column;
-    protected final String fileOrigin;  // NEW: which file this symbol came from
+    public final String fileOrigin;  // NEW: which file this symbol came from
     public SymbolOccurrences symbolOccurrences = new SymbolOccurrences();
 
     public Symbol(String name, Type type, SymbolKind kind, int line, int column, String fileOrigin) {

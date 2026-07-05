@@ -14,6 +14,8 @@ import table.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.Map;
+import java.util.HashMap;
 
 public class DefinitionVisitor implements ASTVisitor<Void> {
 
@@ -26,6 +28,9 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     // Track function context for parser workaround (global statement breaks AST)
     private Stack<FunctionContext> functionStack = new Stack<>();
+
+    private final List<String> errors = new ArrayList<>();
+
 
     private static class FunctionContext {
         String name;
@@ -154,7 +159,7 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
             if (child instanceof FunctionDefNode) {
                 child.accept(this);
                 leakScope = lastFunctionScope; // statements after this point leak into it
-            } else if (leakScope != null) {
+            } else if (leakScope != null && child.getColumn() > 0) { // <-- FIX: Add column check
                 // This node was misattached to ProgramNode by the parser bug.
                 // Re-home it inside the previous function's scope.
                 Scope saved = symbolTable.getCurrentScope();
@@ -169,6 +174,11 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                 inPythonFunction = wasInFunction;
             } else {
                 child.accept(this);
+
+                // <-- FIX: Reset leakScope when we hit a global statement
+                if (child.getColumn() == 0) {
+                    leakScope = null; // End of leaked block
+                }
             }
         }
         return null;
@@ -213,7 +223,11 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         );
 
         if (!symbolTable.define(functionSymbol)) {
-            System.out.println("ERROR: Function:" + node.getName() + "already defined");
+            addError(
+                    "Function '" + node.getName() + "()' already defined",
+                    node.getLine(),
+                    node.getColumn()
+            );
         }
         labelTable.generateLabel(functionSymbol);
 
@@ -235,7 +249,11 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                     symbolTable.getCurrentFileOrigin()
             );
             if (!symbolTable.define(paramSymbol)) {
-                System.out.println("Error: Duplicate paramSymbol " + paramSymbol.getName());
+                addError(
+                        "Duplicate parameter '" + paramSymbol.getName() + "'",
+                        paramSymbol.getLine(),
+                        paramSymbol.getColumn()
+                );
             }
         }
 
@@ -283,54 +301,63 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(AssignmentNode node) {
-        IdentifierNode id = node.getTarget();
-        Type inferredType = node.getValue() != null ? inferType(node.getValue()) : Type.UNKNOWN;
-
-        // Workaround for parser bug: global statement breaks AST block structure
-        // If we're at global level but line is inside a function, force into function scope
-        if (!inPythonFunction && isInsideCurrentFunction(node.getLine())) {
-            Scope funcScope = functionStack.peek().scope;
-            if (funcScope.resolveLocal(id.getName()) == null) {
-                Symbol varSymbol = new Symbol(
-                        id.getName(),
-                        inferredType,
-                        SymbolKind.VARIABLE,
-                        id.getLine(),
-                        id.getColumn(),
-                        symbolTable.getCurrentFileOrigin()
-                );
-                funcScope.define(varSymbol);
-            } else {
-                Symbol existing = funcScope.resolveLocal(id.getName());
-                if (existing != null && existing.getType() == Type.UNKNOWN && inferredType != Type.UNKNOWN) {
-                    existing.setType(inferredType);
-                }
-            }
-        } else {
-            // Normal path
-            if (!symbolTable.existsInCurrentScope(id.getName())) {
-                Symbol varSymbol = new Symbol(
-                        id.getName(),
-                        inferredType,
-                        SymbolKind.VARIABLE,
-                        id.getLine(),
-                        id.getColumn(),
-                        symbolTable.getCurrentFileOrigin()
-                );
-                if (!symbolTable.define(varSymbol)) {
-                    System.out.println("Error: Duplicate variable '" + varSymbol.getName() + "'");
-                }
-            } else {
-                Symbol existing = symbolTable.resolveLocal(id.getName());
-                if (existing != null && existing.getType() == Type.UNKNOWN && inferredType != Type.UNKNOWN) {
-                    existing.setType(inferredType);
-                }
-            }
-        }
+        ExpressionNode targetExpr = node.getTarget(); // Now an ExpressionNode
+        Type inferredType = Type.UNKNOWN;
 
         if (node.getValue() != null) {
             node.getValue().accept(this);
+            inferredType = inferType(node.getValue());
         }
+        // ONLY define a new symbol in the table if the target is a simple Identifier (e.g., `x = 1`)
+        if (targetExpr instanceof IdentifierNode id) {
+
+            // Workaround for parser bug: global statement breaks AST block structure
+            if (!inPythonFunction && isInsideCurrentFunction(node.getLine())) {
+                Scope funcScope = functionStack.peek().scope;
+                if (funcScope.resolveLocal(id.getName()) == null) {
+                    Symbol varSymbol = new Symbol(
+                            id.getName(), inferredType, SymbolKind.VARIABLE,
+                            id.getLine(), id.getColumn(), symbolTable.getCurrentFileOrigin()
+                    );
+                    funcScope.define(varSymbol);
+                } else {
+                    Symbol existing = funcScope.resolveLocal(id.getName());
+                    if (existing != null && existing.getType() == Type.UNKNOWN && inferredType != Type.UNKNOWN) {
+                        existing.setType(inferredType);
+                    }
+                }
+            } else {
+                // Normal path
+                if (!symbolTable.existsInCurrentScope(id.getName())) {
+                    Symbol varSymbol = new Symbol(
+                            id.getName(), inferredType, SymbolKind.VARIABLE,
+                            id.getLine(), id.getColumn(), symbolTable.getCurrentFileOrigin()
+                    );
+                    if (!symbolTable.define(varSymbol)) {
+                        addError(
+                                "Duplicate variable '" + varSymbol.getName() + "'",
+                                varSymbol.getLine(),
+                                varSymbol.getColumn()
+                        );
+                    }
+                } else {
+                    Symbol existing = symbolTable.resolveLocal(id.getName());
+                    if (existing != null && existing.getType() == Type.UNKNOWN && inferredType != Type.UNKNOWN) {
+                        existing.setType(inferredType);
+                    }
+                }
+            }
+        } else {
+            // If it's an AttributeAccessNode (e.g., `self.x = 1`), we don't define a new variable.
+            // Just visit the target expression so it gets recorded in the symbol occurrences.
+            targetExpr.accept(this);
+        }
+
+        // Always visit the value being assigned
+        if (node.getValue() != null) {
+            node.getValue().accept(this);
+        }
+
         return null;
     }
 
@@ -393,12 +420,27 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                 symbolTable.getCurrentFileOrigin()
         );
         if (!symbolTable.define(loopVar)) {
-            System.out.println("Error: Duplicate loopVar " + loopVar.getName());
+            addError(
+                    "Duplicate loop variable '" + loopVar.getName() + "'",
+                    loopVar.getLine(),
+                    loopVar.getColumn()
+            );
         }
         labelTable.generateLabel(loopVar);
 
         if (node.getIterable() != null) {
             node.getIterable().accept(this);
+        }
+        if (node.getIterable() instanceof IdentifierNode iterableId &&
+                node.getVariable() instanceof IdentifierNode loopId &&
+                iterableId.getName().equals(loopId.getName())) {
+
+            addError(
+                    "Loop iterable cannot have the same name as loop variable '" +
+                            loopId.getName() + "'",
+                    loopId.getLine(),
+                    loopId.getColumn()
+            );
         }
         if (node.getBody() != null) {
             node.getBody().accept(this);
@@ -472,10 +514,62 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(CallExpressionNode node) {
+        // Visit callee and arguments normally
         node.getCallee().accept(this);
         for (ExpressionNode arg : node.getArguments()) {
             arg.accept(this);
         }
+
+        // --- NEW: TEMPLATE BRIDGE LOGIC ---
+        if (node.getCallee() instanceof IdentifierNode id && id.getName().equals("render_template")) {
+            // Flask's render_template signature: render_template("file.html", var1=val1, ...)
+            if (!node.getArguments().isEmpty() && node.getArguments().get(0) instanceof StringLiteralNode templateNameNode) {
+
+                // 1. Extract template name (strip quotes)
+                String templateName = templateNameNode.getValue().replace("\"", "").replace("'", "");
+                Map<String, Symbol> contextVars = new HashMap<>();
+
+                // 2. Extract keyword arguments (the context variables)
+                for (int i = 1; i < node.getArguments().size(); i++) {
+                    ExpressionNode arg = node.getArguments().get(i);
+                    if (arg instanceof KeywordArgumentNode kwarg) {
+                        String varName = kwarg.getKey();
+
+                        // Infer the type of the value being passed
+                        Type varType = inferType(kwarg.getValue());
+
+                        // If it's a variable reference, try to get its exact type from the Python SymbolTable
+                        if (kwarg.getValue() instanceof IdentifierNode idVal) {
+                            Symbol resolved = symbolTable.resolve(idVal.getName());
+                            if (resolved != null && resolved.getType() != Type.UNKNOWN) {
+                                varType = resolved.getType();
+                            }
+                        }
+
+                        // Create a symbol representing this variable in the Jinja context
+                        Symbol sym = new Symbol(
+                                varName,
+                                varType,
+                                SymbolKind.JINJA_VARIABLE,
+                                kwarg.getLine(),
+                                kwarg.getColumn(),
+                                symbolTable.getCurrentFileOrigin()
+                        );
+                        contextVars.put(varName, sym);
+                    }
+                }
+
+                // 3. Register to the SymbolTable!
+                symbolTable.registerTemplateContext(templateName, contextVars);
+            }
+        }
+        // ----------------------------------
+
+        return null;
+    }
+
+    @Override
+    public Void visit(AttributeAccessNode node) {
         return null;
     }
 
@@ -563,12 +657,73 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         if (blockName.equals("end") || blockName.equals("endblock")) {
             return null;
         }
-        labelTable.generateBlockLabel(blockName);
-        symbolTable.enterScope("jinja_" + blockName + "_" + node.getLine());
-        for (ASTNode child : node.getChildren()) {
-            child.accept(this);
+
+        switch (node.getJinjaType()) {
+
+            case BLOCK -> {
+                IdentifierNode id = (IdentifierNode) node.getBlockName();
+
+                Symbol block = new Symbol(
+                        id.getName(),
+                        Type.UNKNOWN,
+                        SymbolKind.JINJA_BLOCK,
+                        id.getLine(),
+                        id.getColumn(),
+                        symbolTable.getCurrentFileOrigin()
+                );
+
+                if (blockExistsInCurrentFile(id.getName())) {
+                    addError(
+                            "Duplicate block '" + id.getName() + "'",
+                            id.getLine(),
+                            id.getColumn()
+                    );
+                } else {
+                    symbolTable.define(block);
+                }
+
+                for (ASTNode child : node.getChildren()) {
+                    child.accept(this);
+                }
+            }
+
+            case FOR -> {
+                String scopeName = symbolTable.getCurrentFileOrigin() + "_jinja_for_" + node.getLine();
+                symbolTable.enterScope(scopeName);
+                node.setResolvedScope(symbolTable.getCurrentScope()); // <-- store direct reference
+
+                defineJinjaLoopTarget(node.getCondition());
+                checkJinjaLoopIterableCollision(node.getCondition(), node.getIterable());
+
+                if (node.getIterable() != null) {
+                    node.getIterable().accept(this);
+                }
+                for (ASTNode child : node.getChildren()) {
+                    child.accept(this);
+                }
+
+                symbolTable.exitScope();
+            }
+
+            case WITH -> {
+                String withScopeName = symbolTable.getCurrentFileOrigin() + "_jinja_with_" + node.getLine();
+                symbolTable.enterScope(withScopeName);
+                node.setResolvedScope(symbolTable.getCurrentScope()); // <-- store direct reference
+
+                for (ASTNode child : node.getChildren()) {
+                    child.accept(this);
+                }
+
+                symbolTable.exitScope();
+            }
+
+            case IF -> {
+                for (ASTNode child : node.getChildren()) {
+                    child.accept(this);
+                }
+            }
         }
-        symbolTable.exitScope();
+
         return null;
     }
 
@@ -589,6 +744,40 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(JinjaForNode node) {
+        String scopeName = symbolTable.getCurrentFileOrigin() + "_jinja_for_" + node.getLine();
+
+        symbolTable.enterScope(scopeName);
+
+        // 1. Define loop variable ONLY (this is correct semantic declaration)
+        if (node.getVariable() instanceof IdentifierNode id) {
+
+            Symbol loopVar = new Symbol(
+                    id.getName(),
+                    Type.UNKNOWN,
+                    SymbolKind.JINJA_VARIABLE,
+                    node.getLine(),
+                    node.getColumn(),
+                    symbolTable.getCurrentFileOrigin()
+            );
+
+            if (!symbolTable.define(loopVar)) {
+                addError(
+                        "Duplicate loop variable '" + loopVar.getName() + "'",
+                        node.getLine(),
+                        node.getColumn()
+                );
+            }
+        }
+
+        // 2. Visit iterable (DO NOT define anything inside it)
+        if (node.getIterable() != null) {
+            node.getIterable().accept(this);
+        }
+
+        // 3. Visit loop body
+        node.getBody().accept(this);
+
+        symbolTable.exitScope();
         return null;
     }
 
@@ -670,7 +859,7 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
     @Override
     public Void visit(JinjaExpressionNode node) {
         if (node.getExpression() != null) {
-            collectJinjaVariables(node.getExpression(), node.getLine(), node.getColumn());
+            node.getExpression().accept(this);
         }
         return null;
     }
@@ -691,9 +880,15 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                 node.getColumn(),
                 symbolTable.getCurrentFileOrigin()
         );
-        if (!symbolTable.existsInCurrentScope(withVar.getName())) {
-            symbolTable.define(withVar);
+
+        if (!symbolTable.define(withVar)) {
+            addError(
+                    "Duplicate with variable '" + withVar.getName() + "'",
+                    node.getLine(),
+                    node.getColumn()
+            );
         }
+
         if (node.getValue() != null) {
             node.getValue().accept(this);
         }
@@ -705,62 +900,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         return null;
     }
 
-    private void collectJinjaVariables(ASTNode expr, int line, int column) {
-        if (expr == null) return;
-
-        if (expr instanceof IdentifierNode id) {
-            String fullName = id.getName();
-            if (fullName.contains("(")) return;
-
-            boolean isAttributeAccess = fullName.contains(".");
-            String baseName = fullName.split("\\.")[0];
-
-            if (!symbolTable.existsInCurrentScope(baseName)) {
-                Symbol jinjaVarSymbol = new Symbol(
-                        baseName,
-                        isAttributeAccess ? Type.DICT : Type.UNKNOWN,
-                        SymbolKind.JINJA_VARIABLE,
-                        line, column,
-                        symbolTable.getCurrentFileOrigin()
-                );
-                symbolTable.define(jinjaVarSymbol);
-            } else {
-                // upgrade an already-UNKNOWN var if we later see it used with attribute access
-                Symbol existing = symbolTable.resolve(baseName);
-                if (existing != null && existing.getType() == Type.UNKNOWN && isAttributeAccess) {
-                    existing.setType(Type.DICT);
-                }
-            }
-        } else if (expr instanceof BinaryExpressionNode bin) {
-            if (bin.getOperator().equals(".")) {
-                collectJinjaVariables(bin.getLeft(), line, column);
-            } else if (bin.getOperator().equals("|")) {
-                collectJinjaVariables(bin.getRight(), line, column);
-            }
-            collectJinjaVariables(bin.getLeft(), line, column);
-            collectJinjaVariables(bin.getRight(), line, column);
-        } else if (expr instanceof CallExpressionNode call) {
-            if (call.getCallee() instanceof IdentifierNode funcId) {
-                if (!symbolTable.existsInCurrentScope(funcId.getName())) {
-                    Symbol jinjaFuncSymbol = new Symbol(
-                            funcId.getName(),
-                            inferJinjaFunctionType(funcId.getName()),   // <-- was Type.UNKNOWN
-                            SymbolKind.JINJA_FUNCTION,
-                            line, column,
-                            symbolTable.getCurrentFileOrigin()
-                    );
-                    symbolTable.define(jinjaFuncSymbol);
-                }
-            }
-            for (ExpressionNode arg : call.getArguments()) {
-                collectJinjaVariables(arg, line, column);
-            }
-        } else {
-            for (ASTNode child : expr.getChildren()) {
-                collectJinjaVariables(child, line, column);
-            }
-        }
-    }
     private Type inferJinjaFunctionType(String name) {
         return switch (name) {
             case "url_for" -> Type.STRING;
@@ -770,5 +909,85 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
             case "str" -> Type.STRING;
             default -> Type.UNKNOWN;
         };
+    }
+
+    private boolean blockExistsInCurrentFile(String name) {
+
+        Symbol s = symbolTable.resolveLocal(name);
+
+        return s != null &&
+                s.getKind() == SymbolKind.JINJA_BLOCK &&
+                s.getFileOrigin().equals(symbolTable.getCurrentFileOrigin());
+    }
+
+    // Collects the loop-target name(s) as plain strings, unpacking tuples like `for a, b in ...`
+    private void collectJinjaLoopNames(ASTNode target, List<String> out) {
+        if (target instanceof IdentifierNode id) {
+            out.add(id.getName());
+        } else if (target instanceof TupleExpressionNode tuple) {
+            for (ExpressionNode el : tuple.getElements()) {
+                collectJinjaLoopNames(el, out);
+            }
+        }
+    }
+
+    private void checkJinjaLoopIterableCollision(ASTNode target, ASTNode iterable) {
+        if (target == null || !(iterable instanceof IdentifierNode iterableId)) return;
+
+        List<String> loopNames = new ArrayList<>();
+        collectJinjaLoopNames(target, loopNames);
+
+        if (loopNames.contains(iterableId.getName())) {
+            addError(
+                    "Loop iterable cannot have the same name as loop variable '" +
+                            iterableId.getName() + "'",
+                    iterableId.getLine(),
+                    iterableId.getColumn()
+            );
+        }
+    }
+
+
+    // Recursively defines loop variables from a Jinja for-loop target,
+// unpacking tuples like `for category, message in messages`
+    private void defineJinjaLoopTarget(ASTNode target) {
+        if (target instanceof IdentifierNode id) {
+            Symbol loopVar = new Symbol(
+                    id.getName(),
+                    Type.UNKNOWN,
+                    SymbolKind.JINJA_VARIABLE,
+                    id.getLine(),
+                    id.getColumn(),
+                    symbolTable.getCurrentFileOrigin()
+            );
+            if (!symbolTable.define(loopVar)) {
+                addError(
+                        "Duplicate loop variable '" + id.getName() + "'",
+                        id.getLine(),
+                        id.getColumn()
+                );
+            }
+        } else if (target instanceof TupleExpressionNode tuple) {
+            for (ExpressionNode el : tuple.getElements()) {
+                defineJinjaLoopTarget(el);
+            }
+        }
+    }
+
+    public List<String> getErrors() {
+        return errors;
+    }
+
+    public boolean hasErrors() {
+        return !errors.isEmpty();
+    }
+
+    private void addError(String message, int line, int column) {
+        errors.add(String.format(
+                "Semantic Error at line %d, col %d: %s",
+                line,
+                column,
+                message
+        ));
     }
 }

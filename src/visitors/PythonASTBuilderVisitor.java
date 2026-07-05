@@ -109,21 +109,27 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitAssign(pythonParser.AssignContext ctx) {
-        StringBuilder idName = new StringBuilder();
-        for(TerminalNode ids : ctx.ID()) {
-
-            idName.append(ids.getText() + (ctx.ID().get(ctx.ID().size()-1).equals(ids) ? "" : "."));
-        }
-        IdentifierNode id = new IdentifierNode(
-                idName.toString(),
+        // 1. Start with the first ID as a base IdentifierNode
+        ExpressionNode target = new IdentifierNode(
+                ctx.ID(0).getText(),
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );
 
+        // 2. Chain AttributeAccessNodes for subsequent IDs (e.g., self.x.y)
+        for (int i = 1; i < ctx.ID().size(); i++) {
+            target = new AttributeAccessNode(
+                    target, // The left side (e.g., 'self' or 'self.x')
+                    ctx.ID(i).getText(), // The right side attribute (e.g., 'x' or 'y')
+                    ctx.start.getLine(),
+                    ctx.start.getCharPositionInLine()
+            );
+        }
+
         ExpressionNode value = safeVisit(ctx.expr());
 
         return new AssignmentNode(
-                id,
+                target,
                 value,
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
@@ -455,6 +461,42 @@ public class PythonASTBuilderVisitor extends pythonParserBaseVisitor<ASTNode> {
                 ctx.start.getLine(),
                 ctx.start.getCharPositionInLine()
         );
+    }
+
+    // addExpr : mulExpr ((PLUS | MINUS) mulExpr)* #addsubExpression
+    @Override
+    public ASTNode visitAddsubExpression(pythonParser.AddsubExpressionContext ctx) {
+        ExpressionNode left = safeVisit(ctx.mulExpr(0));
+
+        for (int i = 1; i < ctx.mulExpr().size(); i++) {
+            ExpressionNode right = safeVisit(ctx.mulExpr(i));
+            left = new BinaryExpressionNode(
+                    left,
+                    ctx.getChild(2 * i - 1).getText(), // '+' or '-'
+                    right,
+                    ctx.start.getLine(),
+                    ctx.start.getCharPositionInLine()
+            );
+        }
+        return left;
+    }
+
+    // mulExpr : atom ((MULTIPLY | DIVIDE | MODIFY) atom)* #muldivExpression
+    @Override
+    public ASTNode visitMuldivExpression(pythonParser.MuldivExpressionContext ctx) {
+        ExpressionNode left = safeVisit(ctx.atom(0));
+
+        for (int i = 1; i < ctx.atom().size(); i++) {
+            ExpressionNode right = safeVisit(ctx.atom(i));
+            left = new BinaryExpressionNode(
+                    left,
+                    ctx.getChild(2 * i - 1).getText(), // '*', '/', or '%'
+                    right,
+                    ctx.start.getLine(),
+                    ctx.start.getCharPositionInLine()
+            );
+        }
+        return left;
     }
 
     // generator expression

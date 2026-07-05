@@ -1,4 +1,4 @@
-// Generated from C:/Users/DELL/IdeaProjects/CompilerPractice/src/grammars/pythonParser.g4 by ANTLR 4.13.2
+// Generated from C:/Users/Asus/ANTLR/Compiler/src/grammars/pythonParser.g4 by ANTLR 4.13.2
 package antlr.grammars;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -41,6 +41,18 @@ public interface pythonParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitDecorated_Function_Statement(pythonParser.Decorated_Function_StatementContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code functionStatement}
+	 * labeled alternative in {@link pythonParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterFunctionStatement(pythonParser.FunctionStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code functionStatement}
+	 * labeled alternative in {@link pythonParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitFunctionStatement(pythonParser.FunctionStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code import_Statement}
 	 * labeled alternative in {@link pythonParser#statement}.

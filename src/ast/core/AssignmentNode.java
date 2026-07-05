@@ -1,12 +1,13 @@
-package ast.core;
+package ast.core; // (or your actual package)
 
 public class AssignmentNode extends StatementNode {
 
-    private final IdentifierNode target;
+    // CHANGED: From IdentifierNode to ExpressionNode
+    private final ExpressionNode target;
     private final ExpressionNode value;
 
     public AssignmentNode(
-            IdentifierNode target,
+            ExpressionNode target, // CHANGED parameter type
             ExpressionNode value,
             int line,
             int column
@@ -19,7 +20,8 @@ public class AssignmentNode extends StatementNode {
         add(value);
     }
 
-    public IdentifierNode getTarget() {
+    // CHANGED: Return type to ExpressionNode
+    public ExpressionNode getTarget() {
         return target;
     }
 
@@ -35,8 +37,5 @@ public class AssignmentNode extends StatementNode {
     @Override
     public <T> T accept(HtmlWithCssVisitor<T> visitor) {
         return visitor.visit(this);
-
     }
-
-
 }

@@ -1,4 +1,4 @@
-// Generated from C:/Users/DELL/IdeaProjects/CompilerPractice/src/grammars/pythonParser.g4 by ANTLR 4.13.2
+// Generated from C:/Users/Asus/ANTLR/Compiler/src/grammars/pythonParser.g4 by ANTLR 4.13.2
 package antlr.grammars;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -48,6 +48,18 @@ public class pythonParserBaseListener implements pythonParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitDecorated_Function_Statement(pythonParser.Decorated_Function_StatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFunctionStatement(pythonParser.FunctionStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFunctionStatement(pythonParser.FunctionStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

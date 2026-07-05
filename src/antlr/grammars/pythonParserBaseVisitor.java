@@ -1,4 +1,4 @@
-// Generated from C:/Users/DELL/IdeaProjects/CompilerPractice/src/grammars/pythonParser.g4 by ANTLR 4.13.2
+// Generated from C:/Users/Asus/ANTLR/Compiler/src/grammars/pythonParser.g4 by ANTLR 4.13.2
 package antlr.grammars;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -33,6 +33,13 @@ public class pythonParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitDecorated_Function_Statement(pythonParser.Decorated_Function_StatementContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitFunctionStatement(pythonParser.FunctionStatementContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

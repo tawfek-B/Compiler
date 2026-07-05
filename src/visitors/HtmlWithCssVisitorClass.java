@@ -24,6 +24,7 @@ import static ast.jinja.JinjaBlockNode.BlockType.*;
 
 public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNode> {
 
+    private final List<String> errors = new ArrayList<>();
 
     // safe visit for all nodes
     @SuppressWarnings("Unchecked")
@@ -32,7 +33,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         ASTNode node = visit(ctx);
 
         if (node == null) {
-            System.out.println("Warning: visit returned null for: " + ctx.getText());
+            System.out.println("Semantic Warning: visit returned null for: " + ctx.getText());
         }
         return (T) node;
     }
@@ -243,7 +244,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
             if (cssContent instanceof CssDocumentNode cssDoc) {
                 styleTag.add(cssDoc);
             } else if (cssContent != null) {
-                System.err.println("Warning: Unexpected CSS content type: " + cssContent.getClass().getSimpleName());
+                System.err.println("Semantic Warning: Unexpected CSS content type: " + cssContent.getClass().getSimpleName());
                 styleTag.add(cssContent);
             }
         } else {
@@ -643,7 +644,16 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
             return new JinjaEndNode(raw, t.getLine(), t.getCharPositionInLine());
         }
 
-        return null;
+        // ================= UNKNOWN JINJA TAG =================
+        addError(
+                "Unknown Jinja tag: {% " + raw + " %}",
+                t.getLine(),
+                t.getCharPositionInLine()
+        );
+
+        IdentifierNode blockName = new IdentifierNode(raw, t.getLine(), t.getCharPositionInLine());
+
+        return JinjaBlockNode.unknownBlock(blockName, t.getLine(), t.getCharPositionInLine());
     }
 
     @Override
@@ -673,86 +683,78 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
 
             if (child instanceof ParserRuleContext ruleCtx) {
                 node = safeVisit(ruleCtx);
-
             } else if (child instanceof TerminalNode terminal) {
-
                 int type = terminal.getSymbol().getType();
-
-                if (type == HTMLWithCSSLexer.HTML_TEXT ||
-                        type == HTMLWithCSSLexer.SEA_WS) {
-
+                if (type == HTMLWithCSSLexer.HTML_TEXT || type == HTMLWithCSSLexer.SEA_WS) {
                     String text = terminal.getText();
-
                     if (!text.trim().isEmpty() || text.contains("\n")) {
-                        node = new HtmlTextNode(
-                                text,
-                                terminal.getSymbol().getLine(),
-                                terminal.getSymbol().getCharPositionInLine()
-                        );
+                        node = new HtmlTextNode(text, terminal.getSymbol().getLine(), terminal.getSymbol().getCharPositionInLine());
                     }
                 }
             }
 
             if (node == null) continue;
 
-            // ELSE
+            // === ELSE ===
             if (node instanceof JinjaElseNode) {
-                if (!stack.isEmpty() && stack.peek().getJinjaType() == IF) {
+                if (!stack.isEmpty() && stack.peek().getJinjaType() == BlockType.IF) {
                     stack.peek().setElseBlock((JinjaElseNode) node);
+                } else {
+                    addError("'{% else %}' without matching '{% if %}'",
+                            node.getLine(), node.getColumn());
                 }
                 continue;
             }
 
-            // ENDif (isFunctionCall(rawExpr)) {
-            //
-            //    int parenIndex = rawExpr.indexOf('(');
-            //    String funcName = rawExpr.substring(0, parenIndex).trim();
-            //
-            //    int closeIndex = findMatchingParen(rawExpr, parenIndex);
-            //    if (closeIndex == -1) {
-            //        return new IdentifierNode(rawExpr, line, column);
-            //    }
-            //
-            //    String argsText = rawExpr.substring(parenIndex + 1, closeIndex).trim();
-            //
-            //    IdentifierNode callee = new IdentifierNode(funcName, line, column);
-            //
-            //    List<ExpressionNode> args = new ArrayList<>();
-            //
-            //    if (!argsText.isEmpty()) {
-            //        args = parseArguments(argsText, line, column);
-            //    }
-            //
-            //    return new CallExpressionNode(callee, args, line, column);
-            //}
+            // === END TAG ===
             if (node instanceof JinjaEndNode end) {
-                while (!stack.isEmpty()) {
+                if (stack.isEmpty()) {
+                    addError("Unexpected '{% " + end.getRaw() + " %}' (no open block)",
+                            end.getLine(), end.getColumn());
+                } else {
                     JinjaBlockNode top = stack.pop();
-                    if (matches(top, end)) break;
+                    if (!matches(top, end)) {
+                        addError("Mismatched end tag: expected '{% end" +
+                                        top.getJinjaType().name().toLowerCase() + " %}', got '{% " +
+                                        end.getRaw() + " %}'",
+                                end.getLine(), end.getColumn());
+                        // Push back so outer blocks can still close
+                        stack.push(top);
+                    }
                 }
                 continue;
             }
 
-            // BLOCKS
+            // === OPENING BLOCKS ===
             if (node instanceof JinjaBlockNode block) {
 
                 switch (block.getJinjaType()) {
-
-                    case IF, FOR, BLOCK -> {
+                    case IF, FOR, WITH, BLOCK -> {
                         attach(root, stack, block);
                         stack.push(block);
                     }
-
-                    case WITH -> {
-                        // ✔ FIX: treat as scope marker only (not structural block)
+                    case UNKNOWN -> {
                         attach(root, stack, block);
+                        // Don't push unknown blocks onto stack
                     }
                 }
-
                 continue;
             }
 
             attach(root, stack, node);
+        }
+
+        // === REPORT UNCLOSED BLOCKS ===
+        while (!stack.isEmpty()) {
+            JinjaBlockNode unclosed = stack.pop();
+            String tag = unclosed.getJinjaType().name().toLowerCase();
+
+            addError(
+                    "Missing '{% end" + tag + " %}' for '{% " + tag + " %}' block opened at line " +
+                            unclosed.getLine() + ", col " + unclosed.getColumn(),
+                    unclosed.getLine(),
+                    unclosed.getColumn()
+            );
         }
 
         return root;
@@ -784,14 +786,14 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
     }
 
     private boolean matches(JinjaBlockNode block, JinjaEndNode end) {
-
-        String raw = end.getRaw().trim();
+        String raw = end.getRaw().trim().toLowerCase();
 
         return switch (block.getJinjaType()) {
-            case IF -> raw.startsWith("endif") || raw.startsWith("end if");
-            case FOR -> raw.startsWith("endfor") || raw.startsWith("end for");
-            case WITH -> raw.startsWith("endwith") || raw.startsWith("end with");
+            case IF    -> raw.startsWith("endif") || raw.startsWith("end if");
+            case FOR   -> raw.startsWith("endfor") || raw.startsWith("end for");
+            case WITH  -> raw.startsWith("endwith") || raw.startsWith("end with");
             case BLOCK -> raw.startsWith("endblock") || raw.startsWith("end block");
+            case UNKNOWN -> true; // don't complain about unknown
         };
     }
 
@@ -1011,7 +1013,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         }
 
         // BOOLEAN (case-insensitive + Python-style)
-        if (rawExpr.equalsIgnoreCase("true") || rawExpr.equalsIgnoreCase("false")) {
+        if (rawExpr.equalsIgnoreCase("True") || rawExpr.equalsIgnoreCase("False")) {
             return new BooleanLiteralNode(Boolean.parseBoolean(rawExpr.toLowerCase()), line, column);
         }
 
@@ -1024,14 +1026,12 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
     }
 
     private ASTNode parseJinjaExpression(String rawExpr, int line, int column) {
-
         rawExpr = rawExpr.trim();
 
         System.out.println("DEBUG parseJinjaExpression() → Input: '" + rawExpr + "'");
 
         // ================= ASSIGNMENT =================
         int assignIndex = findTopLevelAssignment(rawExpr);
-
         if (assignIndex != -1) {
 
             String left = stripQuotes(rawExpr.substring(0, assignIndex).trim());
@@ -1045,6 +1045,20 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
                     column
             );
         }
+
+
+        // ================= FILTER (PIPE) =================
+        int pipeIndex = findLastTopLevelPipe(rawExpr);
+        if (pipeIndex != -1) {
+            String left = rawExpr.substring(0, pipeIndex).trim();
+            String right = rawExpr.substring(pipeIndex + 1).trim();
+
+            ExpressionNode leftExpr = (ExpressionNode) parseJinjaExpression(left, line, column);
+            ExpressionNode rightExpr = (ExpressionNode) parseJinjaExpression(right, line, column);
+
+            return new BinaryExpressionNode(leftExpr, "|", rightExpr, line, column);
+        }
+
 
         // ================= DOT ACCESS =================
         int dot = findTopLevelDot(rawExpr);
@@ -1095,6 +1109,65 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
 
         return parseSimpleJinjaExpression(rawExpr, line, column);
     }
+
+    @Override
+    public ASTNode visitTopLevelTextItem(HTMLWithCSSParser.TopLevelTextItemContext ctx) {
+        return safeVisit(ctx.htmlChardata());
+    }
+
+    @Override
+    public ASTNode visitWsData(HTMLWithCSSParser.WsDataContext ctx) {
+        return safeVisit(ctx.SEA_WS()); // Or handle as HtmlTextNode
+    }
+
+    private int findLastTopLevelPipe(String expr) {
+        int parenDepth = 0;
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+        int lastPipe = -1;
+
+        for (int i = 0; i < expr.length(); i++) {
+            char c = expr.charAt(i);
+
+            if (c == '\'' && !inDoubleQuote) {
+                inSingleQuote = !inSingleQuote;
+                continue;
+            }
+            if (c == '"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+                continue;
+            }
+            if (inSingleQuote || inDoubleQuote) continue;
+
+            if (c == '(') {
+                parenDepth++;
+                continue;
+            }
+            if (c == ')') {
+                parenDepth--;
+                continue;
+            }
+
+            if (c == '|' && parenDepth == 0) {
+                lastPipe = i;
+            }
+        }
+        return lastPipe;
+    }
+
+    private void addError(String message, int line, int column) {
+        errors.add(String.format(
+                "Semantic Error at line %d, col %d: %s",
+                line,
+                column,
+                message
+        ));
+    }
+
+    public List<String> getErrors() {
+        return errors;
+    }
+
 
     private static class DummyNode extends ASTNode {
         DummyNode(int line, int column) {

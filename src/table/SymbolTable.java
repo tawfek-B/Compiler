@@ -7,9 +7,10 @@ public class SymbolTable {
     public Scope currentScope;
     private Scope globalScope;
     private String currentFileOrigin = "unknown";  // NEW: track which file we're processing
+    private final Map<String, Map<String, Symbol>> templateContexts = new HashMap<>();
 
     public SymbolTable() {
-        globalScope = new Scope("global", null);
+        globalScope = new Scope("global", null, currentFileOrigin);
         currentScope = globalScope;
     }
 
@@ -18,12 +19,26 @@ public class SymbolTable {
         this.currentFileOrigin = fileOrigin != null ? fileOrigin : "unknown";
     }
 
+    // Add this to SymbolTable.java
+    public Scope findScope(String name) {
+        return findScopeRecursive(globalScope, name);
+    }
+
+    private Scope findScopeRecursive(Scope scope, String name) {
+        if (scope.getName().equals(name)) return scope;
+        for (Scope child : scope.getChildren()) {
+            Scope found = findScopeRecursive(child, name);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     public String getCurrentFileOrigin() {
         return currentFileOrigin;
     }
 
     public void enterScope(String scopeName) {
-        currentScope = new Scope(scopeName, currentScope);
+        currentScope = new Scope(scopeName, currentScope,  currentFileOrigin);
     }
 
     public void exitScope() {
@@ -43,6 +58,23 @@ public class SymbolTable {
 
     public boolean define(Symbol symbol) {
         return currentScope.define(symbol);
+    }
+
+    /**
+     * Called by Python's DefinitionVisitor when it sees render_template(...)
+     */
+    public void registerTemplateContext(String templateName, Map<String, Symbol> context) {
+        templateContexts.put(templateName, context);
+    }
+
+    /**
+     * Called by Main.java before processing an HTML file
+     */
+    public Map<String, Symbol> getTemplateContext(String templateName) {
+        return templateContexts.get(templateName);
+    }
+    public Set<String> getRegisteredTemplateNames() {
+        return templateContexts.keySet();
     }
 
     // NEW: Convenience method that auto-sets file origin
@@ -83,7 +115,7 @@ public class SymbolTable {
     public void clear() {
         // Orphan all child scopes by clearing the global's children list
         // Then create a fresh global scope so old references are truly discarded
-        globalScope = new Scope("global", null);
+        globalScope = new Scope("global", null,  currentFileOrigin);
         currentScope = globalScope;
     }
 
@@ -94,7 +126,7 @@ public class SymbolTable {
 
     private void printScopeRecursive(Scope scope, int depth) {
         String indent = "  ".repeat(depth);
-        System.out.println(indent + "┌─ Scope: " + scope.getName());
+        System.out.println(indent + "┌─ Scope: " + scope.getName() + "\t\t\t" + scope.getFileOrigin());
         System.out.println(indent + "│  " + "-".repeat(70));
 
         if (scope.getSymbols().isEmpty()) {

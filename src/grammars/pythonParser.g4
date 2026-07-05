@@ -11,6 +11,7 @@ program
 statement
     : decorator NEWLINE functionDec             #decorated_LN_Function_Statement
     | decorator functionDec                     #decorated_Function_Statement
+    | functionDec                               #functionStatement
     | importStatement                           #import_Statement
     | globalStatement                           #global_Statement
     | assignment                                #assign_Statement

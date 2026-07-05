@@ -1,4 +1,4 @@
-// Generated from C:/Users/DELL/IdeaProjects/CompilerPractice/src/grammars/pythonParser.g4 by ANTLR 4.13.2
+// Generated from C:/Users/Asus/ANTLR/Compiler/src/grammars/pythonParser.g4 by ANTLR 4.13.2
 package antlr.grammars;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -30,6 +30,13 @@ public interface pythonParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitDecorated_Function_Statement(pythonParser.Decorated_Function_StatementContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code functionStatement}
+	 * labeled alternative in {@link pythonParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionStatement(pythonParser.FunctionStatementContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code import_Statement}
 	 * labeled alternative in {@link pythonParser#statement}.
