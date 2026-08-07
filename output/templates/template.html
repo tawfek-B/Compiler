@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{% block title %}Product Manager{% endblock %}</title>
+    <link rel="stylesheet" href="style.css"/>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <a href="{{ url_for('products_list') }}">Products</a>
+        <a href="{{ url_for('add_product') }}">Add Product</a>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</div>
+<script src="script.js"></script>
+</body>
+</html>

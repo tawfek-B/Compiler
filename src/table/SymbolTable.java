@@ -6,7 +6,7 @@ public class SymbolTable {
 
     public Scope currentScope;
     private Scope globalScope;
-    private String currentFileOrigin = "unknown";  // NEW: track which file we're processing
+    private String currentFileOrigin = "unknown";
     private final Map<String, Map<String, Symbol>> templateContexts = new HashMap<>();
 
     public SymbolTable() {
@@ -14,12 +14,10 @@ public class SymbolTable {
         currentScope = globalScope;
     }
 
-    // NEW: Set the current file origin before processing a file
     public void setCurrentFileOrigin(String fileOrigin) {
         this.currentFileOrigin = fileOrigin != null ? fileOrigin : "unknown";
     }
 
-    // Add this to SymbolTable.java
     public Scope findScope(String name) {
         return findScopeRecursive(globalScope, name);
     }
@@ -77,9 +75,7 @@ public class SymbolTable {
         return templateContexts.keySet();
     }
 
-    // NEW: Convenience method that auto-sets file origin
     public boolean defineWithOrigin(Symbol symbol) {
-        // If symbol was created without file origin, wrap it with current origin
         if ("unknown".equals(symbol.getFileOrigin()) && !"unknown".equals(currentFileOrigin)) {
             symbol = new Symbol(
                     symbol.getName(),
@@ -111,10 +107,7 @@ public class SymbolTable {
         return currentScope.resolveLocal(name) != null;
     }
 
-    // FIXED: Properly reset the entire scope tree
     public void clear() {
-        // Orphan all child scopes by clearing the global's children list
-        // Then create a fresh global scope so old references are truly discarded
         globalScope = new Scope("global", null,  currentFileOrigin);
         currentScope = globalScope;
     }

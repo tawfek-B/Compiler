@@ -41,13 +41,18 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
     @Override
     public ASTNode visitHtmlDocument(HTMLWithCSSParser.HtmlDocumentContext ctx) {
         HtmlDocumentNode root = new HtmlDocumentNode(1, 0);
+
+        List<ASTNode> flat = new ArrayList<>();
         ctx.documentItem().forEach(item -> {
             ASTNode node = safeVisit(item);
-            if (node != null) root.add(node);
+            if (node != null) flat.add(node);
         });
+
+        for (ASTNode n : nestJinjaBlocks(flat)) {
+            root.add(n);
+        }
         return root;
     }
-
     @Override
     public ASTNode visitSeaWsItem(HTMLWithCSSParser.SeaWsItemContext ctx) {
         String text = ctx.getText();
@@ -227,9 +232,35 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
     public ASTNode visitScriptTag(HTMLWithCSSParser.ScriptTagContext ctx) {
         Token start = ctx.SCRIPT_OPEN().getSymbol();
         HtmlTagNode node = new HtmlTagNode("script", start.getLine(), start.getCharPositionInLine());
-        String body = ctx.SCRIPT_BODY() != null ? ctx.SCRIPT_BODY().getText() : ctx.SCRIPT_SHORT_BODY().getText();
-        node.add(new HtmlTextNode(body, start.getLine(), start.getCharPositionInLine()));
+
+        parseScriptAttributes(start.getText(), start.getLine(), start.getCharPositionInLine(), node);
+
+        String rawBody = ctx.SCRIPT_BODY() != null ? ctx.SCRIPT_BODY().getText() : ctx.SCRIPT_SHORT_BODY().getText();
+
+        String body = rawBody.endsWith("</script>")
+                ? rawBody.substring(0, rawBody.length() - "</script>".length())
+                : rawBody;
+
+        if (!body.isEmpty()) {
+            node.add(new HtmlTextNode(body, start.getLine(), start.getCharPositionInLine()));
+        }
         return node;
+    }
+
+    private void parseScriptAttributes(String openTagText, int line, int column, HtmlTagNode node) {
+
+        String inner = openTagText.substring("<script".length(), openTagText.length() - 1).trim();
+        if (inner.isEmpty()) return;
+
+        var m = java.util.regex.Pattern
+                .compile("([a-zA-Z_:][-a-zA-Z0-9_:.]*)\\s*(?:=\\s*(\"[^\"]*\"|'[^']*'|[^\\s\"'>]+))?")
+                .matcher(inner);
+        while (m.find()) {
+            String name = m.group(1).toLowerCase();
+            String rawValue = m.group(2);
+            String value = rawValue == null ? "" : stripQuotes(rawValue);
+            node.addAttribute(new HtmlAttributeNode(name, value, line, column));
+        }
     }
 
     // <style>
@@ -238,7 +269,6 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         Token start = ctx.getStart();
         HtmlTagNode styleTag = new HtmlTagNode("style", start.getLine(), start.getCharPositionInLine());
 
-        // The key change: use ctx.stylesheet() instead of ctx.style()
         if (ctx.stylesheet() != null) {
             ASTNode cssContent = safeVisit(ctx.stylesheet());
             if (cssContent instanceof CssDocumentNode cssDoc) {
@@ -456,35 +486,6 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         HtmlTextNode node = new HtmlTextNode(ctx.getText(), t.getLine(), t.getCharPositionInLine());
         return node;
     }
-    //    private ExpressionNode parseSimpleTerm(String term, int line, int column) {
-//        term = term.trim();
-//
-//
-//        if (term.startsWith("'") || term.startsWith("\"")) {
-//            // String literal
-//            StringLiteralNode node = new StringLiteralNode(stripQuotes(term), line, column);
-//            return node;
-//        }
-//
-//        if (term.matches("-?\\d+(\\.\\d+)?")) {
-//            // number
-//            try {
-//                NumberLiteralNode node = new NumberLiteralNode(term, line, column);
-//                return node;
-//            } catch (NumberFormatException e) {
-//                // fallback
-//            }
-//        }
-//
-//        if (term.equals("true") || term.equals("false")) {
-//            BooleanLiteralNode node =new BooleanLiteralNode(Boolean.parseBoolean(term), line, column);
-//            return node;
-//        }
-//
-//        // default
-//        IdentifierNode node =new IdentifierNode(term, line, column);
-//        return node;
-//    }
 
     @Override
     public ASTNode visitJinjaExpr(HTMLWithCSSParser.JinjaExprContext ctx) {
@@ -672,12 +673,9 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
 
     @Override
     public ASTNode visitHtmlContentBlock(HTMLWithCSSParser.HtmlContentBlockContext ctx) {
-
-        DummyNode root = new DummyNode(0, 0);
-        Stack<JinjaBlockNode> stack = new Stack<>();
+        List<ASTNode> flat = new ArrayList<>();
 
         for (int i = 0; i < ctx.getChildCount(); i++) {
-
             ASTNode node = null;
             var child = ctx.getChild(i);
 
@@ -693,70 +691,13 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
                 }
             }
 
-            if (node == null) continue;
-
-            // === ELSE ===
-            if (node instanceof JinjaElseNode) {
-                if (!stack.isEmpty() && stack.peek().getJinjaType() == BlockType.IF) {
-                    stack.peek().setElseBlock((JinjaElseNode) node);
-                } else {
-                    addError("'{% else %}' without matching '{% if %}'",
-                            node.getLine(), node.getColumn());
-                }
-                continue;
-            }
-
-            // === END TAG ===
-            if (node instanceof JinjaEndNode end) {
-                if (stack.isEmpty()) {
-                    addError("Unexpected '{% " + end.getRaw() + " %}' (no open block)",
-                            end.getLine(), end.getColumn());
-                } else {
-                    JinjaBlockNode top = stack.pop();
-                    if (!matches(top, end)) {
-                        addError("Mismatched end tag: expected '{% end" +
-                                        top.getJinjaType().name().toLowerCase() + " %}', got '{% " +
-                                        end.getRaw() + " %}'",
-                                end.getLine(), end.getColumn());
-                        // Push back so outer blocks can still close
-                        stack.push(top);
-                    }
-                }
-                continue;
-            }
-
-            // === OPENING BLOCKS ===
-            if (node instanceof JinjaBlockNode block) {
-
-                switch (block.getJinjaType()) {
-                    case IF, FOR, WITH, BLOCK -> {
-                        attach(root, stack, block);
-                        stack.push(block);
-                    }
-                    case UNKNOWN -> {
-                        attach(root, stack, block);
-                        // Don't push unknown blocks onto stack
-                    }
-                }
-                continue;
-            }
-
-            attach(root, stack, node);
+            if (node != null) flat.add(node);
         }
 
-        // === REPORT UNCLOSED BLOCKS ===
-        while (!stack.isEmpty()) {
-            JinjaBlockNode unclosed = stack.pop();
-            String tag = unclosed.getJinjaType().name().toLowerCase();
-
-            addError(
-                    "Missing '{% end" + tag + " %}' for '{% " + tag + " %}' block opened at line " +
-                            unclosed.getLine() + ", col " + unclosed.getColumn(),
-                    unclosed.getLine(),
-                    unclosed.getColumn()
-            );
+        DummyNode root = new DummyNode(0, 0);
+        for (ASTNode n : nestJinjaBlocks(flat)) {
+            root.add(n);
         }
-
         return root;
     }
 
@@ -793,7 +734,7 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
             case FOR   -> raw.startsWith("endfor") || raw.startsWith("end for");
             case WITH  -> raw.startsWith("endwith") || raw.startsWith("end with");
             case BLOCK -> raw.startsWith("endblock") || raw.startsWith("end block");
-            case UNKNOWN -> true; // don't complain about unknown
+            case UNKNOWN -> true;
         };
     }
 
@@ -1012,7 +953,6 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
             return new StringLiteralNode(stripQuotes(rawExpr), line, column);
         }
 
-        // BOOLEAN (case-insensitive + Python-style)
         if (rawExpr.equalsIgnoreCase("True") || rawExpr.equalsIgnoreCase("False")) {
             return new BooleanLiteralNode(Boolean.parseBoolean(rawExpr.toLowerCase()), line, column);
         }
@@ -1108,6 +1048,74 @@ public class HtmlWithCssVisitorClass extends HTMLWithCSSParserBaseVisitor<ASTNod
         }
 
         return parseSimpleJinjaExpression(rawExpr, line, column);
+    }
+
+    private List<ASTNode> nestJinjaBlocks(List<ASTNode> flatNodes) {
+        DummyNode root = new DummyNode(0, 0);
+        Stack<JinjaBlockNode> stack = new Stack<>();
+
+        for (ASTNode node : flatNodes) {
+            if (node == null) continue;
+
+            // === ELSE ===
+            if (node instanceof JinjaElseNode) {
+                if (!stack.isEmpty() &&
+                        (stack.peek().getJinjaType() == BlockType.IF || stack.peek().getJinjaType() == BlockType.FOR)) {
+                    stack.peek().setElseBlock((JinjaElseNode) node);
+                    stack.peek().setElseStartIndex(stack.peek().getBody().size());
+                } else {
+                    addError("'{% else %}' without matching '{% if %}'",
+                            node.getLine(), node.getColumn());
+                }
+                continue;
+            }
+
+            // === END TAG ===
+            if (node instanceof JinjaEndNode end) {
+                if (stack.isEmpty()) {
+                    addError("Unexpected '{% " + end.getRaw() + " %}' (no open block)",
+                            end.getLine(), end.getColumn());
+                } else {
+                    JinjaBlockNode top = stack.pop();
+                    if (!matches(top, end)) {
+                        addError("Mismatched end tag: expected '{% end" +
+                                        top.getJinjaType().name().toLowerCase() + " %}', got '{% " +
+                                        end.getRaw() + " %}'",
+                                end.getLine(), end.getColumn());
+                        stack.push(top);
+                    }
+                }
+                continue;
+            }
+
+            // === OPENING BLOCKS ===
+            if (node instanceof JinjaBlockNode block) {
+                switch (block.getJinjaType()) {
+                    case IF, FOR, WITH, BLOCK -> {
+                        attach(root, stack, block);
+                        stack.push(block);
+                    }
+                    case UNKNOWN -> attach(root, stack, block);
+                }
+                continue;
+            }
+
+            attach(root, stack, node);
+        }
+
+        // === REPORT UNCLOSED BLOCKS ===
+        while (!stack.isEmpty()) {
+            JinjaBlockNode unclosed = stack.pop();
+            String tag = unclosed.getJinjaType().name().toLowerCase();
+            addError(
+                    "Missing '{% end" + tag + " %}' for '{% " + tag + " %}' block opened at line " +
+                            unclosed.getLine() + ", col " + unclosed.getColumn(),
+                    unclosed.getLine(),
+                    unclosed.getColumn()
+            );
+        }
+
+        return root.getChildren();
     }
 
     @Override

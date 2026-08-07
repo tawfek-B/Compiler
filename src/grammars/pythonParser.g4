@@ -63,7 +63,7 @@ parameterList
 
 // Blocks
 block
-    : statement+                   #blockStatement
+    : INDENT statement+ DEDENT                   #blockStatement
     ;
 
 // Assignment / Return

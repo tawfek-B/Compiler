@@ -26,11 +26,6 @@ public class Scope {
     public List<Scope> getChildren() { return children; }
     public String getFileOrigin() { return fileOrigin; }
 
-    /**
-     * Defines a new symbol in this scope.
-     * @return true if the symbol was successfully defined.
-     *         false if a symbol with the same name already exists in this scope.
-     */
     public boolean define(Symbol symbol) {
         if (symbols.containsKey(symbol.getName())) {
             return false; // A symbol with this name is already defined here.

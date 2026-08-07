@@ -1,0 +1,1676 @@
+{
+  "file": "app.py",
+  "ast": {
+    "type": "ProgramNode",
+    "label": "ProgramNode",
+    "line": 99,
+    "column": 0,
+    "children": [
+      {
+        "type": "FromImportNode",
+        "label": "FromImportNode",
+        "line": 99,
+        "column": 0,
+        "children": [
+          {
+            "type": "IdentifierNode",
+            "label": "Identifier: from",
+            "line": 99,
+            "column": 0,
+            "children": []
+          },
+          {
+            "type": "IdentifierNode",
+            "label": "Identifier: flask",
+            "line": 99,
+            "column": 0,
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "AssignmentNode",
+        "label": "AssignmentNode",
+        "line": 101,
+        "column": 0,
+        "children": [
+          {
+            "type": "IdentifierNode",
+            "label": "Identifier: app",
+            "line": 101,
+            "column": 0,
+            "children": []
+          },
+          {
+            "type": "CallExpressionNode",
+            "label": "CallExpressionNode",
+            "line": 101,
+            "column": 6,
+            "children": [
+              {
+                "type": "IdentifierNode",
+                "label": "Identifier: Flask",
+                "line": 101,
+                "column": 6,
+                "children": []
+              },
+              {
+                "type": "IdentifierNode",
+                "label": "Identifier: __name__",
+                "line": 101,
+                "column": 12,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "AssignmentNode",
+        "label": "AssignmentNode",
+        "line": 102,
+        "column": 0,
+        "children": [
+          {
+            "type": "AttributeAccessNode",
+            "label": "Attribute: .secret_key",
+            "line": 102,
+            "column": 0,
+            "children": []
+          },
+          {
+            "type": "StringLiteralNode",
+            "label": "String: \"super_secret_key\"",
+            "line": 102,
+            "column": 17,
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "AssignmentNode",
+        "label": "AssignmentNode",
+        "line": 104,
+        "column": 0,
+        "children": [
+          {
+            "type": "IdentifierNode",
+            "label": "Identifier: products",
+            "line": 104,
+            "column": 0,
+            "children": []
+          },
+          {
+            "type": "ListNode",
+            "label": "ListNode",
+            "line": 104,
+            "column": 11,
+            "children": [
+              {
+                "type": "DictNode",
+                "label": "DictNode",
+                "line": 105,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 105,
+                    "column": 5,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"id\"",
+                        "line": 105,
+                        "column": 5,
+                        "children": []
+                      },
+                      {
+                        "type": "NumberLiteralNode",
+                        "label": "Number: 1",
+                        "line": 105,
+                        "column": 11,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 105,
+                    "column": 14,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"name\"",
+                        "line": 105,
+                        "column": 14,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"Laptop Pro\"",
+                        "line": 105,
+                        "column": 22,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 105,
+                    "column": 36,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"price\"",
+                        "line": 105,
+                        "column": 36,
+                        "children": []
+                      },
+                      {
+                        "type": "NumberLiteralNode",
+                        "label": "Number: 1299.99",
+                        "line": 105,
+                        "column": 45,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 105,
+                    "column": 54,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"description\"",
+                        "line": 105,
+                        "column": 54,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"High-performance laptop\"",
+                        "line": 105,
+                        "column": 69,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 105,
+                    "column": 96,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"image\"",
+                        "line": 105,
+                        "column": 96,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"https://via.placeholder.com/300x200?text=Laptop\"",
+                        "line": 105,
+                        "column": 105,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "DictNode",
+                "label": "DictNode",
+                "line": 106,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 106,
+                    "column": 5,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"id\"",
+                        "line": 106,
+                        "column": 5,
+                        "children": []
+                      },
+                      {
+                        "type": "NumberLiteralNode",
+                        "label": "Number: 2",
+                        "line": 106,
+                        "column": 11,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 106,
+                    "column": 14,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"name\"",
+                        "line": 106,
+                        "column": 14,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"Wireless Mouse\"",
+                        "line": 106,
+                        "column": 22,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 106,
+                    "column": 40,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"price\"",
+                        "line": 106,
+                        "column": 40,
+                        "children": []
+                      },
+                      {
+                        "type": "NumberLiteralNode",
+                        "label": "Number: 29.99",
+                        "line": 106,
+                        "column": 49,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 106,
+                    "column": 56,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"description\"",
+                        "line": 106,
+                        "column": 56,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"Ergonomic wireless mouse\"",
+                        "line": 106,
+                        "column": 71,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "KeyValueNode",
+                    "label": "KeyValueNode",
+                    "line": 106,
+                    "column": 99,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: \"image\"",
+                        "line": 106,
+                        "column": 99,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"https://via.placeholder.com/300x200?text=Mouse\"",
+                        "line": 106,
+                        "column": 108,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "AssignmentNode",
+        "label": "AssignmentNode",
+        "line": 108,
+        "column": 0,
+        "children": [
+          {
+            "type": "IdentifierNode",
+            "label": "Identifier: next_id",
+            "line": 108,
+            "column": 0,
+            "children": []
+          },
+          {
+            "type": "NumberLiteralNode",
+            "label": "Number: 3",
+            "line": 108,
+            "column": 10,
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "FunctionDefNode",
+        "label": "FunctionDef: products_list",
+        "line": 111,
+        "column": 0,
+        "children": [
+          {
+            "type": "DecoratorNode",
+            "label": "DecoratorNode",
+            "line": 110,
+            "column": 0,
+            "children": [
+              {
+                "type": "CallExpressionNode",
+                "label": "CallExpressionNode",
+                "line": 110,
+                "column": 0,
+                "children": [
+                  {
+                    "type": "AttributeAccessNode",
+                    "label": "Attribute: .route",
+                    "line": 110,
+                    "column": 5,
+                    "children": []
+                  },
+                  {
+                    "type": "StringLiteralNode",
+                    "label": "String: \"/\"",
+                    "line": 110,
+                    "column": 11,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "DecoratorNode",
+            "label": "DecoratorNode",
+            "line": 111,
+            "column": 0,
+            "children": [
+              {
+                "type": "CallExpressionNode",
+                "label": "CallExpressionNode",
+                "line": 111,
+                "column": 0,
+                "children": [
+                  {
+                    "type": "AttributeAccessNode",
+                    "label": "Attribute: .route",
+                    "line": 111,
+                    "column": 5,
+                    "children": []
+                  },
+                  {
+                    "type": "StringLiteralNode",
+                    "label": "String: \"/products\"",
+                    "line": 111,
+                    "column": 11,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "BlockNode",
+            "label": "BlockNode",
+            "line": 0,
+            "column": -1,
+            "children": [
+              {
+                "type": "ReturnNode",
+                "label": "ReturnNode",
+                "line": 113,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "CallExpressionNode",
+                    "label": "CallExpressionNode",
+                    "line": 113,
+                    "column": 11,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: render_template",
+                        "line": 113,
+                        "column": 11,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"products.html\"",
+                        "line": 113,
+                        "column": 27,
+                        "children": []
+                      },
+                      {
+                        "type": "KeywordArgumentNode",
+                        "label": "KeywordArgumentNode",
+                        "line": 113,
+                        "column": 44,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "FunctionDefNode",
+        "label": "FunctionDef: product_details",
+        "line": 116,
+        "column": 0,
+        "children": [
+          {
+            "type": "DecoratorNode",
+            "label": "DecoratorNode",
+            "line": 115,
+            "column": 0,
+            "children": [
+              {
+                "type": "CallExpressionNode",
+                "label": "CallExpressionNode",
+                "line": 115,
+                "column": 0,
+                "children": [
+                  {
+                    "type": "AttributeAccessNode",
+                    "label": "Attribute: .route",
+                    "line": 115,
+                    "column": 5,
+                    "children": []
+                  },
+                  {
+                    "type": "StringLiteralNode",
+                    "label": "String: \"/product/<int:product_id>\"",
+                    "line": 115,
+                    "column": 11,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "ParameterNode",
+            "label": "Parameter: product_id",
+            "line": 116,
+            "column": 20,
+            "children": []
+          },
+          {
+            "type": "BlockNode",
+            "label": "BlockNode",
+            "line": 0,
+            "column": -1,
+            "children": [
+              {
+                "type": "AssignmentNode",
+                "label": "AssignmentNode",
+                "line": 117,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "IdentifierNode",
+                    "label": "Identifier: product",
+                    "line": 117,
+                    "column": 4,
+                    "children": []
+                  },
+                  {
+                    "type": "CallExpressionNode",
+                    "label": "CallExpressionNode",
+                    "line": 117,
+                    "column": 14,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: next",
+                        "line": 117,
+                        "column": 14,
+                        "children": []
+                      },
+                      {
+                        "type": "GeneratorExpressionNode",
+                        "label": "GeneratorExpressionNode",
+                        "line": 117,
+                        "column": 19,
+                        "children": []
+                      },
+                      {
+                        "type": "NoneLiteralNode",
+                        "label": "None",
+                        "line": 117,
+                        "column": 67,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "IfNode",
+                "label": "IfNode",
+                "line": 118,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "ComparisonNode",
+                    "label": "Comparison: is",
+                    "line": 118,
+                    "column": 7,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: product",
+                        "line": 118,
+                        "column": 7,
+                        "children": []
+                      },
+                      {
+                        "type": "NoneLiteralNode",
+                        "label": "None",
+                        "line": 118,
+                        "column": 18,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "BlockNode",
+                    "label": "BlockNode",
+                    "line": 0,
+                    "column": -1,
+                    "children": [
+                      {
+                        "type": "CallExpressionNode",
+                        "label": "CallExpressionNode",
+                        "line": 119,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: flash",
+                            "line": 119,
+                            "column": 8,
+                            "children": []
+                          },
+                          {
+                            "type": "StringLiteralNode",
+                            "label": "String: \"Product not found!\"",
+                            "line": 119,
+                            "column": 14,
+                            "children": []
+                          },
+                          {
+                            "type": "StringLiteralNode",
+                            "label": "String: \"error\"",
+                            "line": 119,
+                            "column": 36,
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "ReturnNode",
+                        "label": "ReturnNode",
+                        "line": 120,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "CallExpressionNode",
+                            "label": "CallExpressionNode",
+                            "line": 120,
+                            "column": 15,
+                            "children": [
+                              {
+                                "type": "IdentifierNode",
+                                "label": "Identifier: redirect",
+                                "line": 120,
+                                "column": 15,
+                                "children": []
+                              },
+                              {
+                                "type": "CallExpressionNode",
+                                "label": "CallExpressionNode",
+                                "line": 120,
+                                "column": 24,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: url_for",
+                                    "line": 120,
+                                    "column": 24,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "StringLiteralNode",
+                                    "label": "String: \"products_list\"",
+                                    "line": 120,
+                                    "column": 32,
+                                    "children": []
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "ReturnNode",
+                "label": "ReturnNode",
+                "line": 121,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "CallExpressionNode",
+                    "label": "CallExpressionNode",
+                    "line": 121,
+                    "column": 11,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: render_template",
+                        "line": 121,
+                        "column": 11,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"details.html\"",
+                        "line": 121,
+                        "column": 27,
+                        "children": []
+                      },
+                      {
+                        "type": "KeywordArgumentNode",
+                        "label": "KeywordArgumentNode",
+                        "line": 121,
+                        "column": 43,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "FunctionDefNode",
+        "label": "FunctionDef: add_product",
+        "line": 124,
+        "column": 0,
+        "children": [
+          {
+            "type": "DecoratorNode",
+            "label": "DecoratorNode",
+            "line": 123,
+            "column": 0,
+            "children": [
+              {
+                "type": "CallExpressionNode",
+                "label": "CallExpressionNode",
+                "line": 123,
+                "column": 0,
+                "children": [
+                  {
+                    "type": "AttributeAccessNode",
+                    "label": "Attribute: .route",
+                    "line": 123,
+                    "column": 5,
+                    "children": []
+                  },
+                  {
+                    "type": "StringLiteralNode",
+                    "label": "String: \"/add\"",
+                    "line": 123,
+                    "column": 11,
+                    "children": []
+                  },
+                  {
+                    "type": "KeywordArgumentNode",
+                    "label": "KeywordArgumentNode",
+                    "line": 123,
+                    "column": 19,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "BlockNode",
+            "label": "BlockNode",
+            "line": 0,
+            "column": -1,
+            "children": [
+              {
+                "type": "IfNode",
+                "label": "IfNode",
+                "line": 125,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "ComparisonNode",
+                    "label": "Comparison: ==",
+                    "line": 125,
+                    "column": 7,
+                    "children": [
+                      {
+                        "type": "AttributeAccessNode",
+                        "label": "Attribute: .method",
+                        "line": 125,
+                        "column": 7,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"POST\"",
+                        "line": 125,
+                        "column": 25,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "BlockNode",
+                    "label": "BlockNode",
+                    "line": 0,
+                    "column": -1,
+                    "children": [
+                      {
+                        "type": "GlobalNode",
+                        "label": "Global: next_id",
+                        "line": 126,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: next_id",
+                            "line": 126,
+                            "column": 8,
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "AssignmentNode",
+                        "label": "AssignmentNode",
+                        "line": 127,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: name",
+                            "line": 127,
+                            "column": 8,
+                            "children": []
+                          },
+                          {
+                            "type": "CallExpressionNode",
+                            "label": "CallExpressionNode",
+                            "line": 127,
+                            "column": 15,
+                            "children": [
+                              {
+                                "type": "AttributeAccessNode",
+                                "label": "Attribute: .get",
+                                "line": 127,
+                                "column": 15,
+                                "children": []
+                              },
+                              {
+                                "type": "StringLiteralNode",
+                                "label": "String: \"name\"",
+                                "line": 127,
+                                "column": 32,
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "AssignmentNode",
+                        "label": "AssignmentNode",
+                        "line": 128,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: price",
+                            "line": 128,
+                            "column": 8,
+                            "children": []
+                          },
+                          {
+                            "type": "CallExpressionNode",
+                            "label": "CallExpressionNode",
+                            "line": 128,
+                            "column": 16,
+                            "children": [
+                              {
+                                "type": "IdentifierNode",
+                                "label": "Identifier: float",
+                                "line": 128,
+                                "column": 16,
+                                "children": []
+                              },
+                              {
+                                "type": "CallExpressionNode",
+                                "label": "CallExpressionNode",
+                                "line": 128,
+                                "column": 22,
+                                "children": [
+                                  {
+                                    "type": "AttributeAccessNode",
+                                    "label": "Attribute: .get",
+                                    "line": 128,
+                                    "column": 22,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "StringLiteralNode",
+                                    "label": "String: \"price\"",
+                                    "line": 128,
+                                    "column": 39,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "NumberLiteralNode",
+                                    "label": "Number: 0",
+                                    "line": 128,
+                                    "column": 48,
+                                    "children": []
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "AssignmentNode",
+                        "label": "AssignmentNode",
+                        "line": 129,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: description",
+                            "line": 129,
+                            "column": 8,
+                            "children": []
+                          },
+                          {
+                            "type": "CallExpressionNode",
+                            "label": "CallExpressionNode",
+                            "line": 129,
+                            "column": 22,
+                            "children": [
+                              {
+                                "type": "AttributeAccessNode",
+                                "label": "Attribute: .get",
+                                "line": 129,
+                                "column": 22,
+                                "children": []
+                              },
+                              {
+                                "type": "StringLiteralNode",
+                                "label": "String: \"description\"",
+                                "line": 129,
+                                "column": 39,
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "AssignmentNode",
+                        "label": "AssignmentNode",
+                        "line": 130,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: image",
+                            "line": 130,
+                            "column": 8,
+                            "children": []
+                          },
+                          {
+                            "type": "CallExpressionNode",
+                            "label": "CallExpressionNode",
+                            "line": 130,
+                            "column": 16,
+                            "children": [
+                              {
+                                "type": "AttributeAccessNode",
+                                "label": "Attribute: .get",
+                                "line": 130,
+                                "column": 16,
+                                "children": []
+                              },
+                              {
+                                "type": "StringLiteralNode",
+                                "label": "String: \"image\"",
+                                "line": 130,
+                                "column": 33,
+                                "children": []
+                              },
+                              {
+                                "type": "StringLiteralNode",
+                                "label": "String: \"https://via.placeholder.com/300x200?text=Product\"",
+                                "line": 130,
+                                "column": 42,
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "IfNode",
+                        "label": "IfNode",
+                        "line": 131,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "LogicalExpressionNode",
+                            "label": "LogicalOp: or",
+                            "line": 131,
+                            "column": 11,
+                            "children": [
+                              {
+                                "type": "UnaryExpressionNode",
+                                "label": "UnaryOp: not",
+                                "line": 131,
+                                "column": 11,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: name",
+                                    "line": 131,
+                                    "column": 15,
+                                    "children": []
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "ComparisonNode",
+                                "label": "Comparison: <=",
+                                "line": 131,
+                                "column": 23,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: price",
+                                    "line": 131,
+                                    "column": 23,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "NumberLiteralNode",
+                                    "label": "Number: 0",
+                                    "line": 131,
+                                    "column": 32,
+                                    "children": []
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "BlockNode",
+                            "label": "BlockNode",
+                            "line": 0,
+                            "column": -1,
+                            "children": [
+                              {
+                                "type": "CallExpressionNode",
+                                "label": "CallExpressionNode",
+                                "line": 132,
+                                "column": 12,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: flash",
+                                    "line": 132,
+                                    "column": 12,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "StringLiteralNode",
+                                    "label": "String: \"Invalid product data!\"",
+                                    "line": 132,
+                                    "column": 18,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "StringLiteralNode",
+                                    "label": "String: \"error\"",
+                                    "line": 132,
+                                    "column": 43,
+                                    "children": []
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "ReturnNode",
+                                "label": "ReturnNode",
+                                "line": 133,
+                                "column": 12,
+                                "children": [
+                                  {
+                                    "type": "CallExpressionNode",
+                                    "label": "CallExpressionNode",
+                                    "line": 133,
+                                    "column": 19,
+                                    "children": [
+                                      {
+                                        "type": "IdentifierNode",
+                                        "label": "Identifier: redirect",
+                                        "line": 133,
+                                        "column": 19,
+                                        "children": []
+                                      },
+                                      {
+                                        "type": "CallExpressionNode",
+                                        "label": "CallExpressionNode",
+                                        "line": 133,
+                                        "column": 28,
+                                        "children": [
+                                          {
+                                            "type": "IdentifierNode",
+                                            "label": "Identifier: url_for",
+                                            "line": 133,
+                                            "column": 28,
+                                            "children": []
+                                          },
+                                          {
+                                            "type": "StringLiteralNode",
+                                            "label": "String: \"add_product\"",
+                                            "line": 133,
+                                            "column": 36,
+                                            "children": []
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "CallExpressionNode",
+                        "label": "CallExpressionNode",
+                        "line": 134,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "AttributeAccessNode",
+                            "label": "Attribute: .append",
+                            "line": 134,
+                            "column": 8,
+                            "children": []
+                          },
+                          {
+                            "type": "DictNode",
+                            "label": "DictNode",
+                            "line": 134,
+                            "column": 24,
+                            "children": [
+                              {
+                                "type": "KeyValueNode",
+                                "label": "KeyValueNode",
+                                "line": 134,
+                                "column": 25,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: \"id\"",
+                                    "line": 134,
+                                    "column": 25,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: next_id",
+                                    "line": 134,
+                                    "column": 31,
+                                    "children": []
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "KeyValueNode",
+                                "label": "KeyValueNode",
+                                "line": 134,
+                                "column": 40,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: \"name\"",
+                                    "line": 134,
+                                    "column": 40,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: name",
+                                    "line": 134,
+                                    "column": 48,
+                                    "children": []
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "KeyValueNode",
+                                "label": "KeyValueNode",
+                                "line": 134,
+                                "column": 54,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: \"price\"",
+                                    "line": 134,
+                                    "column": 54,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: price",
+                                    "line": 134,
+                                    "column": 63,
+                                    "children": []
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "KeyValueNode",
+                                "label": "KeyValueNode",
+                                "line": 134,
+                                "column": 70,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: \"description\"",
+                                    "line": 134,
+                                    "column": 70,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: description",
+                                    "line": 134,
+                                    "column": 85,
+                                    "children": []
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "KeyValueNode",
+                                "label": "KeyValueNode",
+                                "line": 134,
+                                "column": 98,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: \"image\"",
+                                    "line": 134,
+                                    "column": 98,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: image",
+                                    "line": 134,
+                                    "column": 107,
+                                    "children": []
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "NumberLiteralNode",
+                        "label": "Number: 1",
+                        "line": 135,
+                        "column": 19,
+                        "children": []
+                      },
+                      {
+                        "type": "CallExpressionNode",
+                        "label": "CallExpressionNode",
+                        "line": 136,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: flash",
+                            "line": 136,
+                            "column": 8,
+                            "children": []
+                          },
+                          {
+                            "type": "StringLiteralNode",
+                            "label": "String: \"Product added successfully!\"",
+                            "line": 136,
+                            "column": 14,
+                            "children": []
+                          },
+                          {
+                            "type": "StringLiteralNode",
+                            "label": "String: \"success\"",
+                            "line": 136,
+                            "column": 45,
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "ReturnNode",
+                        "label": "ReturnNode",
+                        "line": 137,
+                        "column": 8,
+                        "children": [
+                          {
+                            "type": "CallExpressionNode",
+                            "label": "CallExpressionNode",
+                            "line": 137,
+                            "column": 15,
+                            "children": [
+                              {
+                                "type": "IdentifierNode",
+                                "label": "Identifier: redirect",
+                                "line": 137,
+                                "column": 15,
+                                "children": []
+                              },
+                              {
+                                "type": "CallExpressionNode",
+                                "label": "CallExpressionNode",
+                                "line": 137,
+                                "column": 24,
+                                "children": [
+                                  {
+                                    "type": "IdentifierNode",
+                                    "label": "Identifier: url_for",
+                                    "line": 137,
+                                    "column": 24,
+                                    "children": []
+                                  },
+                                  {
+                                    "type": "StringLiteralNode",
+                                    "label": "String: \"products_list\"",
+                                    "line": 137,
+                                    "column": 32,
+                                    "children": []
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "ReturnNode",
+                "label": "ReturnNode",
+                "line": 138,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "CallExpressionNode",
+                    "label": "CallExpressionNode",
+                    "line": 138,
+                    "column": 11,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: render_template",
+                        "line": 138,
+                        "column": 11,
+                        "children": []
+                      },
+                      {
+                        "type": "StringLiteralNode",
+                        "label": "String: \"add.html\"",
+                        "line": 138,
+                        "column": 27,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "FunctionDefNode",
+        "label": "FunctionDef: delete_product",
+        "line": 141,
+        "column": 0,
+        "children": [
+          {
+            "type": "DecoratorNode",
+            "label": "DecoratorNode",
+            "line": 140,
+            "column": 0,
+            "children": [
+              {
+                "type": "CallExpressionNode",
+                "label": "CallExpressionNode",
+                "line": 140,
+                "column": 0,
+                "children": [
+                  {
+                    "type": "AttributeAccessNode",
+                    "label": "Attribute: .route",
+                    "line": 140,
+                    "column": 5,
+                    "children": []
+                  },
+                  {
+                    "type": "StringLiteralNode",
+                    "label": "String: \"/delete/<int:product_id>\"",
+                    "line": 140,
+                    "column": 11,
+                    "children": []
+                  },
+                  {
+                    "type": "KeywordArgumentNode",
+                    "label": "KeywordArgumentNode",
+                    "line": 140,
+                    "column": 39,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "ParameterNode",
+            "label": "Parameter: product_id",
+            "line": 141,
+            "column": 19,
+            "children": []
+          },
+          {
+            "type": "BlockNode",
+            "label": "BlockNode",
+            "line": 0,
+            "column": -1,
+            "children": [
+              {
+                "type": "GlobalNode",
+                "label": "Global: products",
+                "line": 142,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "IdentifierNode",
+                    "label": "Identifier: products",
+                    "line": 142,
+                    "column": 4,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "AssignmentNode",
+                "label": "AssignmentNode",
+                "line": 143,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "IdentifierNode",
+                    "label": "Identifier: products",
+                    "line": 143,
+                    "column": 4,
+                    "children": []
+                  },
+                  {
+                    "type": "ListComprehensionNode",
+                    "label": "ListComprehensionNode",
+                    "line": 143,
+                    "column": 15,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: p",
+                        "line": 143,
+                        "column": 16,
+                        "children": []
+                      },
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: p",
+                        "line": 143,
+                        "column": 22,
+                        "children": []
+                      },
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: products",
+                        "line": 143,
+                        "column": 27,
+                        "children": []
+                      },
+                      {
+                        "type": "ComparisonNode",
+                        "label": "Comparison: !=",
+                        "line": 143,
+                        "column": 39,
+                        "children": [
+                          {
+                            "type": "SubscriptionNode",
+                            "label": "SubscriptionNode",
+                            "line": 143,
+                            "column": 39,
+                            "children": []
+                          },
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: product_id",
+                            "line": 143,
+                            "column": 50,
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "CallExpressionNode",
+                "label": "CallExpressionNode",
+                "line": 144,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "IdentifierNode",
+                    "label": "Identifier: flash",
+                    "line": 144,
+                    "column": 4,
+                    "children": []
+                  },
+                  {
+                    "type": "StringLiteralNode",
+                    "label": "String: \"Product deleted!\"",
+                    "line": 144,
+                    "column": 10,
+                    "children": []
+                  },
+                  {
+                    "type": "StringLiteralNode",
+                    "label": "String: \"success\"",
+                    "line": 144,
+                    "column": 30,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "ReturnNode",
+                "label": "ReturnNode",
+                "line": 145,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "CallExpressionNode",
+                    "label": "CallExpressionNode",
+                    "line": 145,
+                    "column": 11,
+                    "children": [
+                      {
+                        "type": "IdentifierNode",
+                        "label": "Identifier: redirect",
+                        "line": 145,
+                        "column": 11,
+                        "children": []
+                      },
+                      {
+                        "type": "CallExpressionNode",
+                        "label": "CallExpressionNode",
+                        "line": 145,
+                        "column": 20,
+                        "children": [
+                          {
+                            "type": "IdentifierNode",
+                            "label": "Identifier: url_for",
+                            "line": 145,
+                            "column": 20,
+                            "children": []
+                          },
+                          {
+                            "type": "StringLiteralNode",
+                            "label": "String: \"products_list\"",
+                            "line": 145,
+                            "column": 28,
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "IfNode",
+        "label": "IfNode",
+        "line": 147,
+        "column": 0,
+        "children": [
+          {
+            "type": "ComparisonNode",
+            "label": "Comparison: ==",
+            "line": 147,
+            "column": 3,
+            "children": [
+              {
+                "type": "IdentifierNode",
+                "label": "Identifier: __name__",
+                "line": 147,
+                "column": 3,
+                "children": []
+              },
+              {
+                "type": "StringLiteralNode",
+                "label": "String: \"__main__\"",
+                "line": 147,
+                "column": 15,
+                "children": []
+              }
+            ]
+          },
+          {
+            "type": "BlockNode",
+            "label": "BlockNode",
+            "line": 0,
+            "column": -1,
+            "children": [
+              {
+                "type": "CallExpressionNode",
+                "label": "CallExpressionNode",
+                "line": 148,
+                "column": 4,
+                "children": [
+                  {
+                    "type": "AttributeAccessNode",
+                    "label": "Attribute: .run",
+                    "line": 148,
+                    "column": 4,
+                    "children": []
+                  },
+                  {
+                    "type": "KeywordArgumentNode",
+                    "label": "KeywordArgumentNode",
+                    "line": 148,
+                    "column": 12,
+                    "children": []
+                  },
+                  {
+                    "type": "KeywordArgumentNode",
+                    "label": "KeywordArgumentNode",
+                    "line": 148,
+                    "column": 24,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

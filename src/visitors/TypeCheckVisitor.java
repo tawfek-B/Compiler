@@ -19,7 +19,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
     private final List<String> errors = new ArrayList<>();
     private boolean seenExtends = false;
 
-    // Track control flow to validate break/continue/return
     private int loopDepth = 0;
     private int functionDepth = 0;
     private Type currentFunctionReturnType = Type.VOID;
@@ -66,7 +65,7 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
         return null;
     }
 
-    // --- HELPER: Resolve the type of any expression on the fly ---
+    // helper resolves the type of any expression on the fly
     private Type resolveType(ExpressionNode node) {
         if (node == null) return Type.UNKNOWN;
 
@@ -126,7 +125,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
         return Type.UNKNOWN;
     }
 
-    // --- CORE VISITORS ---
 
     @Override
     public Void visit(IdentifierNode node) {
@@ -158,14 +156,14 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
             if (sym != null) {
                 Type lhsType = sym.getType();
                 if (lhsType == Type.UNKNOWN && rhsType != Type.UNKNOWN) {
-                    sym.setType(rhsType); // Infer type on first assignment
+                    sym.setType(rhsType);
                 } else if (lhsType != Type.UNKNOWN && rhsType != Type.UNKNOWN && lhsType != rhsType) {
                     // FULFILLS YOUR TODO: Check for type change errors
                     addError("Type mismatch: Variable '" + id.getName() + "' was defined as " + lhsType + " but is being assigned " + rhsType, node.getLine(), node.getColumn());
                 }
             }
         } else {
-            target.accept(this); // Handle attribute access (e.g., self.x = 1)
+            target.accept(this);
         }
         return null;
     }
@@ -245,7 +243,7 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
             currentFunctionReturnType = f.getType();
         }
 
-        // Find and enter the ACTUAL scope created by DefinitionVisitor
+        // find and enter the actual scope created by DefinitionVisitor
         Scope funcScope = symbolTable.findScope("function_" + node.getName());
         if (funcScope != null) {
             symbolTable.currentScope = funcScope;
@@ -384,7 +382,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
                     leakReturnType = f.getType();
                 }
             } else if (leakFuncName != null && child.getColumn() > 0) {
-                // Leaked statement! We must increment functionDepth and enter the scope.
                 functionDepth++;
                 Type prevReturnType = currentFunctionReturnType;
                 currentFunctionReturnType = leakReturnType;
@@ -403,7 +400,7 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
             } else {
                 child.accept(this);
                 if (child.getColumn() == 0) {
-                    leakFuncName = null; // End of leaked block
+                    leakFuncName = null;
                 }
             }
         }
@@ -472,7 +469,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
         return null;
     }
 
-    // Nodes that don't require semantic checks
     @Override
     public Void visit(StatementNode node) {
         return null;
@@ -557,7 +553,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(HtmlAttributeNode node) {
-        // Critical — Jinja expressions embedded in src/href/action/class need checking too
         for (ASTNode child : node.getChildren()) child.accept(this);
         return null;
     }
@@ -568,7 +563,7 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
     public Void visit(JinjaBlockNode node) {
 
         Scope savedScope = symbolTable.getCurrentScope();
-        Scope jinjaScope = node.getResolvedScope(); // direct reference, no name matching
+        Scope jinjaScope = node.getResolvedScope();
 
         if (jinjaScope != null) {
             symbolTable.currentScope = jinjaScope;
@@ -576,9 +571,7 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
 
         switch (node.getJinjaType()) {
 
-            // =========================
             // IF BLOCK
-            // =========================
             case IF -> {
 
                 if (node.getCondition() != null) {
@@ -594,12 +587,9 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
                 }
             }
 
-            // =========================
             // FOR BLOCK
-            // =========================
             case FOR -> {
 
-                // 1. Check iterable exists
                 if (node.getIterable() instanceof IdentifierNode id) {
 
                     Symbol sym = symbolTable.resolve(id.getName());
@@ -617,35 +607,26 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
                     node.getIterable().accept(this);
                 }
 
-                // 2. Check loop variable scope (already defined in DefinitionVisitor)
                 if (node.getLoopVariable() != null) {
                     node.getLoopVariable().accept(this);
                 }
 
-                // 3. Visit body
                 for (ASTNode child : node.getChildren()) {
                     child.accept(this);
                 }
             }
 
-            // =========================
-            // WITH BLOCK
-            // =========================
             case WITH -> {
                 for (ASTNode child : node.getChildren()) {
                     child.accept(this);
                 }
             }
 
-            // =========================
-            // NAMED BLOCK
-            // =========================
             case BLOCK -> {
 
                 boolean prev = inJinjaBlock;
                 inJinjaBlock = true;
 
-                // Duplicate detection already handled in DefinitionVisitor
 
                 for (ASTNode child : node.getChildren()) {
                     child.accept(this);
@@ -671,7 +652,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(JinjaWithAssignmentNode node) {
-        // Check the RHS — e.g. validate get_flashed_messages(...) if needed
         if (node.getValue() != null) {
             checkJinjaExpression(node.getValue(), node.getLine(), node.getColumn());
         }
@@ -730,7 +710,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(JinjaForNode node) {
-        // 1. Check iterable exists
         if (node.getIterable() != null) {
 
             if (node.getIterable() instanceof IdentifierNode id) {
@@ -749,7 +728,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
             node.getIterable().accept(this);
         }
 
-        // 2. Enter matching scope created in DefinitionVisitor
         String scopeName = symbolTable.getCurrentFileOrigin() + "_jinja_for_" + node.getLine();
 
         Scope saved = symbolTable.getCurrentScope();
@@ -759,10 +737,8 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
             symbolTable.currentScope = loopScope;
         }
 
-        // 3. Visit loop body
         node.getBody().accept(this);
 
-        // 4. Restore scope
         symbolTable.currentScope = saved;
 
         return null;
@@ -779,14 +755,10 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
         return null;
     }
 
-// --- Core Jinja checking logic ---
 
     private void checkJinjaExpression(ASTNode expr, int line, int column) {
         if (expr == null) return;
 
-        // =========================
-        // IDENTIFIER
-        // =========================
         if (expr instanceof IdentifierNode id) {
 
             String name = id.getName();
@@ -800,7 +772,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
 
             if (IGNORE_UNDEFINED.contains(baseName)) return;
 
-            // 3. Check symbol table
             Symbol sym = resolveJinjaSymbol(baseName);
 
             if (sym == null) {
@@ -814,9 +785,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
             return;
         }
 
-        // =========================
-        // FUNCTION CALL
-        // =========================
         if (expr instanceof CallExpressionNode call) {
 
             if (call.getCallee() instanceof IdentifierNode funcId) {
@@ -827,7 +795,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
                     addError("super() can only be used inside a {% block %} tag", line, column);
                 }
 
-                // special case: url_for
                 if (fn.equals("url_for")) {
                     checkUrlFor(call);
                     return;
@@ -865,9 +832,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
             return;
         }
 
-        // =========================
-        // BINARY EXPRESSIONS
-        // =========================
         if (expr instanceof BinaryExpressionNode bin) {
 
             String op = bin.getOperator();
@@ -877,15 +841,10 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
                 return;
             }
 
-            // =========================
-// FILTER
-// =========================
             if (op.equals("|")) {
 
-                // Validate value being filtered
                 checkJinjaExpression(bin.getLeft(), line, column);
 
-                // Validate filter itself
                 ASTNode filter = bin.getRight();
 
                 if (filter instanceof IdentifierNode id) {
@@ -903,8 +862,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
                 } else if (filter instanceof CallExpressionNode call &&
                         call.getCallee() instanceof IdentifierNode id) {
 
-                    // Handles filters with arguments:
-                    // {{ price|round(2) }}
                     String filterName = id.getName();
 
                     if (!JINJA_FILTERS.contains(filterName)) {
@@ -929,9 +886,6 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
             return;
         }
 
-        // =========================
-        // FALLBACK
-        // =========================
         for (ASTNode child : expr.getChildren()) {
             checkJinjaExpression(child, line, column);
         }
@@ -952,23 +906,19 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
                         call.getLine(), call.getColumn());
             }
         }
-        // Recurse into keyword args (e.g. product_id=product.id)
         for (int i = 1; i < call.getArguments().size(); i++) {
             checkJinjaExpression(call.getArguments().get(i), call.getLine(), call.getColumn());
         }
     }
 
     private void checkArithmeticTypes(String op, Type left, Type right, int line, int column) {
-        // Can't judge if either side isn't resolvable (common for Jinja vars) — skip rather than false-positive
         if (left == Type.UNKNOWN || right == Type.UNKNOWN) return;
 
-        if (left == right) return; // same type on both sides — fine for now
+        if (left == right) return;
 
         boolean leftNumeric = left == Type.INT || left == Type.FLOAT || left == Type.BOOL;
         boolean rightNumeric = right == Type.INT || right == Type.FLOAT || right == Type.BOOL;
-        if (leftNumeric && rightNumeric) return; // int/float/bool freely mix, like Python
-
-        // Python allows "ab" * 3 and 3 * "ab" (string repetition) — carve that out
+        if (leftNumeric && rightNumeric) return;
         if (op.equals("*") &&
                 ((left == Type.STRING && right == Type.INT) ||
                         (left == Type.INT && right == Type.STRING))) {
@@ -985,7 +935,7 @@ public class TypeCheckVisitor implements ASTVisitor<Void> {
         return switch (name) {
             case "url_for" -> Type.STRING;
             case "get_flashed_messages" -> Type.LIST;
-            case "format" -> Type.STRING;          // covers "%.2f"|format(...)
+            case "format" -> Type.STRING;
             case "len" -> Type.INT;
             case "str" -> Type.STRING;
             default -> Type.UNKNOWN;

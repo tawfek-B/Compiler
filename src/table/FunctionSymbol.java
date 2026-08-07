@@ -11,7 +11,6 @@ public class FunctionSymbol extends Symbol {
         this.paramTypes = paramTypes;
     }
 
-    // Backward-compatible constructor
     public FunctionSymbol(String name, Type type, List<Type> paramTypes,
                           int line, int column) {
         this(name, type, paramTypes, line, column, "unknown");

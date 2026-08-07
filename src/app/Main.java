@@ -11,6 +11,10 @@ import ast.jinja.JinjaBlockNode;
 import ast.jinja.JinjaExpressionNode;
 import ast.jinja.JinjaExtendNode;
 import ast.python.*;
+import generation.ASTJsonSerializer;
+import generation.PythonEmitterVisitor;
+import generation.HtmlJinjaEmitterVisitor;
+import generation.RenderOrchestrator;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import semantics.SemanticAnalyzer;
@@ -33,11 +37,30 @@ public class Main {
     private static final SymbolTable symbolTable = new SymbolTable();
     private static final LabelTable labelTable = new LabelTable();
 
+    private static final String OUTPUT_DIR = "generated";
+    private static final String RENDER_OUTPUT_DIR = "output";
+    private static final String COMPILER_OUTPUT_DIR = "compiler_output";
+
+    private static ProgramNode pythonRoot = null;
+    private static String pythonRootFileName = null;
+    private static final List<String> jinjaRootNames = new ArrayList<>();
+    private static final List<ASTNode> jinjaRootNodes = new ArrayList<>();
+
+    private static final List<String> semanticReportLines = new ArrayList<>();
+    private static final List<String> generationLogLines = new ArrayList<>();
+
     public static void main(String[] args) {
         String path = args.length > 0 ? args[0] : "src/test";
 
         System.out.println("Processing files in: " + path);
         System.out.println("===========================================");
+
+        try {
+            Files.createDirectories(Paths.get(RENDER_OUTPUT_DIR));
+            Files.createDirectories(Paths.get(COMPILER_OUTPUT_DIR));
+        } catch (IOException e) {
+            System.err.println("Failed to create output directories: " + e.getMessage());
+        }
 
         Path start = Paths.get(path);
         List<Path> allFiles = new ArrayList<>();
@@ -59,7 +82,17 @@ public class Main {
                 .toList();
 
         List<Path> htmlFiles = allFiles.stream()
-                .filter(p -> p.toString().toLowerCase().endsWith(".html"))
+                .filter(p -> {
+                    String lower = p.toString().toLowerCase();
+                    return lower.endsWith(".html") || lower.endsWith(".jinja");
+                })
+                .toList();
+
+        List<Path> supportFiles = allFiles.stream()
+                .filter(p -> {
+                    String lower = p.toString().toLowerCase();
+                    return lower.endsWith(".css") || lower.endsWith(".js");
+                })
                 .toList();
 
         // 1. Always start from app.py — this is the single Python entry point.
@@ -76,8 +109,13 @@ public class Main {
         symbolTable.setCurrentFileOrigin(path);
         processPythonFile(appPy);
 
-        // 2. Discover HTML files by following render_template(...) calls found in app.py,
-        //    then follow {% extends %} chains from each reached template.
+
+        copySupportFile(appPy, "app.py");
+
+        for (Path supportFile : supportFiles) {
+            copySupportFile(supportFile, supportFile.getFileName().toString());
+        }
+
         Set<String> visitedTemplates = new LinkedHashSet<>();
         Deque<String> queue = new ArrayDeque<>(symbolTable.getRegisteredTemplateNames());
 
@@ -94,8 +132,10 @@ public class Main {
 
             Path templatePath = findFileByName(htmlFiles, templateName);
             if (templatePath == null) {
-                System.err.println("Semantic Warning: template '" + templateName +
-                        "' was referenced but not found on disk.");
+                String warning = "Semantic Warning: template '" + templateName +
+                        "' was referenced but not found on disk.";
+                System.err.println(warning);
+                semanticReportLines.add(warning);
                 continue;
             }
 
@@ -113,16 +153,115 @@ public class Main {
                 .filter(name -> !visitedTemplates.contains(name))
                 .toList();
 
-
         symbolTable.printScopeTree();
 
         if (!unreached.isEmpty()) {
             System.out.println("\n=== Unreachable Templates (not analyzed) ===");
-            unreached.forEach(name ->
-                    System.out.println("  " + name + " — no render_template() or {% extends %} path reaches it"));
+            unreached.forEach(name -> {
+                System.out.println("  " + name + " — no render_template() or {% extends %} path reaches it");
+                generationLogLines.add("Skipped (unreachable): " + name);
+            });
         }
 
+        if (pythonRoot != null) {
+            Map<String, ASTNode> templatesByName = new LinkedHashMap<>();
+            for (int i = 0; i < jinjaRootNames.size(); i++) {
+                templatesByName.put(jinjaRootNames.get(i), jinjaRootNodes.get(i));
+            }
+            RenderOrchestrator orchestrator = new RenderOrchestrator(pythonRoot, templatesByName, Paths.get(RENDER_OUTPUT_DIR));
+            orchestrator.renderAll();
+            for (String line : orchestrator.getLog()) {
+                System.out.println("[Render] " + line);
+                generationLogLines.add("[Render] " + line);
+            }
+        }
+
+
+        writeAstJsonFiles();
+        writeSemanticReport();
+        writeGenerationLog();
+
         System.out.println("\nAll reachable files processed successfully.");
+    }
+
+    private static void copySupportFile(Path source, String targetName) {
+        try {
+            Path target = Paths.get(RENDER_OUTPUT_DIR).resolve(targetName);
+            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+            String msg = "Copied support file " + targetName + " -> " + target;
+            System.out.println("[Support] " + msg);
+            generationLogLines.add(msg);
+        } catch (IOException e) {
+            String msg = "Failed to copy support file " + targetName + ": " + e.getMessage();
+            System.err.println("[Support] " + msg);
+            generationLogLines.add(msg);
+        }
+    }
+
+    private static void writeSemanticReport() {
+        try {
+            Path reportPath = Paths.get(COMPILER_OUTPUT_DIR).resolve("semantic_report.txt");
+            String content = semanticReportLines.isEmpty()
+                    ? "No semantic errors or warnings were found.\n"
+                    : String.join("\n", semanticReportLines) + "\n";
+            Files.writeString(reportPath, content);
+            System.out.println("\n[Report] Wrote " + reportPath);
+        } catch (IOException e) {
+            System.err.println("[Report] Failed to write semantic_report.txt: " + e.getMessage());
+        }
+    }
+
+    private static void writeGenerationLog() {
+        try {
+            Path logPath = Paths.get(COMPILER_OUTPUT_DIR).resolve("generation_log.txt");
+            String content = String.join("\n", generationLogLines) + "\n";
+            Files.writeString(logPath, content);
+            System.out.println("[Report] Wrote " + logPath);
+        } catch (IOException e) {
+            System.err.println("[Report] Failed to write generation_log.txt: " + e.getMessage());
+        }
+    }
+
+    private static void writeAstJsonFiles() {
+        ASTJsonSerializer serializer = new ASTJsonSerializer();
+
+        if (pythonRoot != null) {
+            try {
+                Path pyPath = Paths.get(COMPILER_OUTPUT_DIR).resolve("ast_python.json");
+                StringBuilder sb = new StringBuilder();
+                sb.append("{\n  \"file\": ").append('"').append(pythonRootFileName).append("\",\n");
+                sb.append("  \"ast\": ");
+                sb.append(serializer.serialize(pythonRoot, 1));
+                sb.append("\n}\n");
+                Files.writeString(pyPath, sb.toString());
+                System.out.println("[Report] Wrote " + pyPath);
+                generationLogLines.add("Wrote AST JSON: " + pyPath);
+            } catch (IOException e) {
+                System.err.println("[Report] Failed to write ast_python.json: " + e.getMessage());
+                generationLogLines.add("ERROR writing ast_python.json: " + e.getMessage());
+            }
+        }
+
+        try {
+            Path jinjaPath = Paths.get(COMPILER_OUTPUT_DIR).resolve("ast_jinja.json");
+            StringBuilder sb = new StringBuilder();
+            sb.append("{\n  \"templates\": [\n");
+            for (int i = 0; i < jinjaRootNames.size(); i++) {
+                sb.append("    {\n      \"file\": \"").append(jinjaRootNames.get(i)).append("\",\n");
+                sb.append("      \"ast\": ");
+                sb.append(serializer.serialize(jinjaRootNodes.get(i), 3));
+                sb.append("\n    }");
+                if (i < jinjaRootNames.size() - 1) sb.append(",");
+                sb.append("\n");
+            }
+            sb.append("  ]\n}\n");
+            Files.writeString(jinjaPath, sb.toString());
+            System.out.println("[Report] Wrote " + jinjaPath);
+            generationLogLines.add("Wrote AST JSON: " + jinjaPath);
+        } catch (IOException e) {
+            System.err.println("[Report] Failed to write ast_jinja.json: " + e.getMessage());
+            generationLogLines.add("ERROR writing ast_jinja.json: " + e.getMessage());
+        }
     }
 
     private static Path findFileByName(List<Path> candidates, String fileName) {
@@ -149,6 +288,7 @@ public class Main {
         String fileName = filePath.getFileName().toString();
         symbolTable.setCurrentFileOrigin(fileName);
         System.out.println("\n--- " + fileName + " ---");
+        generationLogLines.add("Processing Python file: " + fileName);
 
         try {
             CharStream input = CharStreams.fromPath(filePath);
@@ -162,16 +302,98 @@ public class Main {
             ASTNode ast = builder.visit(tree);
 
             if (ast instanceof ProgramNode program) {
+                pythonRoot = program;
+                pythonRootFileName = fileName;
                 SemanticAnalyzer analyzer = new SemanticAnalyzer(symbolTable, labelTable);
-                analyzer.analyze(program);
+                List<String> errors = analyzer.analyze(program);
+
+                if (!errors.isEmpty()) {
+                    semanticReportLines.add("=== " + fileName + " ===");
+                    semanticReportLines.addAll(errors);
+                    semanticReportLines.add("");
+                    generationLogLines.add("Semantic analysis for " + fileName + ": " + errors.size() + " error(s) found");
+                } else {
+                    generationLogLines.add("Semantic analysis for " + fileName + ": passed");
+                }
 
                 System.out.println("AST: ");
                 printAst(ast);
+
+                emitPythonFile(program, fileName);
             }
 
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
+            generationLogLines.add("ERROR processing " + fileName + ": " + e.getMessage());
+        }
+    }
+
+    private static void emitHtmlFile(ASTNode ast, String fileName) {
+        try {
+            String generatedSource = new HtmlJinjaEmitterVisitor().emit(ast);
+
+            Path outDir = Paths.get(OUTPUT_DIR);
+            Files.createDirectories(outDir);
+            Path outFile = outDir.resolve(fileName);
+            Files.writeString(outFile, generatedSource);
+
+            System.out.println("\n[Codegen] Wrote generated template to " + outFile);
+            generationLogLines.add("Wrote re-emitted template source: " + outFile);
+        } catch (IOException e) {
+            System.err.println("[Codegen] Failed to write generated file for " + fileName + ": " + e.getMessage());
+            generationLogLines.add("ERROR writing generated template " + fileName + ": " + e.getMessage());
+        }
+    }
+
+    private static void emitPythonFile(ProgramNode program, String fileName) {
+        try {
+            String generatedSource = new PythonEmitterVisitor().emit(program);
+
+            Path outDir = Paths.get(OUTPUT_DIR);
+            Files.createDirectories(outDir);
+            Path outFile = outDir.resolve(fileName);
+            Files.writeString(outFile, generatedSource);
+
+            System.out.println("\n[Codegen] Wrote generated Python to " + outFile);
+            generationLogLines.add("Wrote re-emitted Python source: " + outFile);
+
+            CollectingErrorListener errorListener = new CollectingErrorListener();
+
+            CharStream regenInput = CharStreams.fromString(generatedSource);
+            pythonLexer regenLexer = new pythonLexer(regenInput);
+            regenLexer.removeErrorListeners();
+            regenLexer.addErrorListener(errorListener);
+
+            CommonTokenStream regenTokens = new CommonTokenStream(regenLexer);
+            pythonParser regenParser = new pythonParser(regenTokens);
+            regenParser.removeErrorListeners();
+            regenParser.addErrorListener(errorListener);
+            regenParser.program();
+
+            if (errorListener.errors.isEmpty()) {
+                System.out.println("[Codegen] Round-trip check passed: generated " + fileName + " re-parses cleanly.");
+                generationLogLines.add("Round-trip check passed for " + fileName);
+            } else {
+                System.err.println("[Codegen] Round-trip check FAILED for generated " + fileName + ":");
+                errorListener.errors.forEach(err -> System.err.println("  " + err));
+                generationLogLines.add("Round-trip check FAILED for " + fileName + ": " + errorListener.errors.size() + " issue(s)");
+            }
+        } catch (IOException e) {
+            System.err.println("[Codegen] Failed to write generated file for " + fileName + ": " + e.getMessage());
+            generationLogLines.add("ERROR writing generated Python " + fileName + ": " + e.getMessage());
+        }
+    }
+
+    /** Collects syntax errors instead of printing them, for the round-trip check. */
+    private static class CollectingErrorListener extends BaseErrorListener {
+        final List<String> errors = new ArrayList<>();
+
+        @Override
+        public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol,
+                                int line, int charPositionInLine,
+                                String msg, RecognitionException e) {
+            errors.add("line " + line + ":" + charPositionInLine + " " + msg);
         }
     }
 
@@ -183,6 +405,7 @@ public class Main {
         String fileName = filePath.getFileName().toString();
         symbolTable.setCurrentFileOrigin(fileName);
         System.out.println("\n--- " + fileName + " ---");
+        generationLogLines.add("Processing HTML/Jinja file: " + fileName);
 
         List<String> extendedTemplates = new ArrayList<>();
 
@@ -195,6 +418,8 @@ public class Main {
             ParseTree tree = parser.htmlDocument();
             HtmlWithCssVisitorClass htmlWithCssVisitor = new HtmlWithCssVisitorClass();
             ASTNode ast = htmlWithCssVisitor.visit(tree);
+            jinjaRootNames.add(fileName);
+            jinjaRootNodes.add(ast);
 
             symbolTable.enterScope("html_" + fileName);
 
@@ -202,6 +427,7 @@ public class Main {
             Map<String, Symbol> context = symbolTable.getTemplateContext(fileName);
             if (context != null) {
                 System.out.println("[Bridge] Injecting " + context.size() + " variables into " + fileName);
+                generationLogLines.add("Injected " + context.size() + " context variable(s) into " + fileName);
                 for (Symbol sym : context.values()) {
                     symbolTable.define(sym);
                 }
@@ -225,21 +451,27 @@ public class Main {
             System.out.println("\nAST:");
             printAst(ast);
 
-            // Discover {% extends %} targets before leaving the scope
             collectExtends(ast, extendedTemplates);
 
             symbolTable.exitScope();
             printCssDetails(ast, fileName);
-
+            emitHtmlFile(ast, fileName);
 
             if (!allErrors.isEmpty()) {
                 System.err.println("\n=== Semantic Analysis Failed in " + fileName + " ===");
                 allErrors.forEach(System.err::println);
+                semanticReportLines.add("=== " + fileName + " ===");
+                semanticReportLines.addAll(allErrors);
+                semanticReportLines.add("");
+                generationLogLines.add("Semantic analysis for " + fileName + ": " + allErrors.size() + " error(s) found");
+            } else {
+                generationLogLines.add("Semantic analysis for " + fileName + ": passed");
             }
 
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
+            generationLogLines.add("ERROR processing " + fileName + ": " + e.getMessage());
         }
 
         return extendedTemplates;

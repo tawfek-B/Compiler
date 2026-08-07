@@ -11,38 +11,31 @@
 <!--            padding: 20px;-->
 <!--            background: #f4f4f4;-->
 <!--        }-->
-
 <!--        .container {-->
 <!--            max-width: 1200px;-->
 <!--            margin: auto;-->
 <!--        }-->
-
 <!--        .flash {-->
 <!--            padding: 10px;-->
 <!--            margin: 10px 0;-->
 <!--            border-radius: 5px;-->
 <!--        }-->
-
 <!--        .success {-->
 <!--            background: #d4edda;-->
 <!--            color: #155724;-->
 <!--        }-->
-
 <!--        .error {-->
 <!--            background: #f8d7da;-->
 <!--            color: #721c24;-->
 <!--        }-->
-
 <!--        .nav {-->
 <!--            margin-bottom: 20px;-->
 <!--        }-->
-
 <!--        .nav a {-->
 <!--            margin-right: 15px;-->
 <!--            text-decoration: none;-->
 <!--            color: #007bff;-->
 <!--        }-->
-
 <!--        .card {-->
 <!--            background: white;-->
 <!--            border-radius: 8px;-->
@@ -59,7 +52,6 @@
 <!--        <a href="{{ url_for() }}">Products</a>-->
 <!--        <a href="{{ url_for('add_product') }}">Add Product</a>-->
 <!--    </div>-->
-
 <!--    {% with messages = get_flashed_messages(with_categories=true) %}-->
 <!--    {% if messages %}-->
 <!--    {% for category, message in messages %}-->
@@ -75,49 +67,55 @@
 <!--    {% endfor %}-->
 <!--    {% endwith %}-->
 <!--    {% endfor %}-->
-
-
-
 <!--    {% with x = 2%}-->
 <!--    {{x()}}-->
 <!--    {% endwith %}-->
-
 <!--    {%with x = 4, x = 2%}-->
 <!--    {%endwith%}-->
 <!--    {{super()}}-->
 <!--    {%blocky%}-->
 <!--    {%endblocky%}-->
-
 <!--    {% block content %}{% endblock %}-->
 <!--    {% block content %}{% endblock %}-->
 <!--</div>-->
 <!--</body>-->
 <!--</html>-->
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>{% block title %}Product Manager{% endblock %}</title>
-    <link rel="stylesheet" href="style.css"/>
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-<div class="container">
-    <div class="nav">
-        <a href="{{ url_for('products_list') }}">Products</a>
-        <a href="{{ url_for('add_product') }}">Add Product</a>
-    </div>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    {% for category, message in messages %}
-    <div class="flash {{ category }}">{{ message }}</div>
-    {% endfor %}
-    {% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
-</div>
-<script src="script.js"></script>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>
+            {% block title %}
+                Product Manager
+            {% endblock %}
+
+        </title>
+        <link rel="stylesheet" href="style.css" />
+        {% block extra_css %}
+        {% endblock %}
+
+    </head>
+    <body>
+        <div class="container">
+            <div class="nav">
+                <a href="{{ url_for('products_list') }}">Products</a>
+                <a href="{{ url_for('add_product') }}">Add Product</a>
+            </div>
+            {% with messages=get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash{{ category }}">{{ message }}</div>
+                    {% endfor %}
+
+                {% endif %}
+
+            {% endwith %}
+
+            {% block content %}
+            {% endblock %}
+
+        </div>
+        <script src="script.js"></script>
+    </body>
 </html>

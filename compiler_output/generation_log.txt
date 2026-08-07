@@ -1,0 +1,31 @@
+Processing Python file: app.py
+Semantic analysis for app.py: passed
+Wrote re-emitted Python source: generated\app.py
+Round-trip check passed for app.py
+Copied support file app.py -> output\app.py
+Copied support file script.js -> output\script.js
+Copied support file style.css -> output\style.css
+Processing HTML/Jinja file: details.html
+Injected 1 context variable(s) into details.html
+Wrote re-emitted template source: generated\details.html
+Semantic analysis for details.html: passed
+Processing HTML/Jinja file: add.html
+Injected 0 context variable(s) into add.html
+Wrote re-emitted template source: generated\add.html
+Semantic analysis for add.html: passed
+Processing HTML/Jinja file: products.html
+Injected 1 context variable(s) into products.html
+Wrote re-emitted template source: generated\products.html
+Semantic analysis for products.html: passed
+Processing HTML/Jinja file: base.html
+Wrote re-emitted template source: generated\base.html
+Semantic analysis for base.html: passed
+Processing HTML/Jinja file: template.html
+Wrote re-emitted template source: generated\template.html
+Semantic analysis for template.html: passed
+[Render] Rendered products.html -> output\products.html
+[Render] 'product' for 'details.html' could not be statically resolved (likely request-time data) -- using sample data
+[Render] Rendered details.html -> output\details.html
+[Render] Rendered add.html -> output\add.html
+Wrote AST JSON: compiler_output\ast_python.json
+Wrote AST JSON: compiler_output\ast_jinja.json

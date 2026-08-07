@@ -1,22 +1,208 @@
+//lexer grammar pythonLexer;
+//
+//tokens { INDENT, DEDENT }
+//
+//@lexer::members {
+//    private java.util.ArrayDeque<Integer> indents = new java.util.ArrayDeque<>();
+//    private java.util.LinkedList<Token> pending = new java.util.LinkedList<>();
+//    private int opened = 0;
+//
+//    @Override
+//    public Token nextToken() {
+//        // EOF handling - emit remaining dedents
+//        if (_input.LA(1) == EOF && !indents.isEmpty()) {
+//            if (pending.isEmpty()) {
+//                pending.add(new CommonToken(NEWLINE, "\n"));
+//            }
+//            while (!indents.isEmpty()) {
+//                indents.pop();
+//                pending.add(new CommonToken(DEDENT, ""));
+//            }
+//            pending.add(new CommonToken(EOF, "<EOF>"));
+//        }
+//
+//        if (!pending.isEmpty()) {
+//            return pending.poll();
+//        }
+//
+//        return super.nextToken();
+//    }
+//}
+//
+//// Keywords
+//DEF         : 'def';
+//RETURN      : 'return';
+//BREAK       : 'break';
+//PASS        : 'pass';
+//CONTINUE    : 'continue';
+//IF          : 'if';
+//ELIF        : 'elif';
+//ELSE        : 'else';
+//WHILE       : 'while';
+//TRY         : 'try';
+//FINALLY     : 'finally';
+//EXCEPT      : 'except';
+//FOR         : 'for';
+//IN          : 'in';
+//TRUE        : 'True';
+//FALSE       : 'False';
+//RANGE       : 'range';
+//IMPORT      : 'import';
+//FROM        : 'from';
+//AS          : 'as';
+//GLOBAL      : 'global';
+//NONE        : 'None';
+//IS          : 'is';
+//OR          : 'or';
+//AND         : 'and';
+//NOT         : 'not';
+//
+//AT          : '@';
+//
+//// Operators & Symbols
+//ASSIGN          : '=';
+//PLUS            : '+';
+//MINUS           : '-';
+//MULTIPLY        : '*';
+//DIVIDE          : '/';
+//MODIFY          : '%';
+//
+//PLUS_EQUAL      : '+=';
+//MINUS_EQUAL      : '-=';
+//TIMES_EQUAL      : '*=';
+//DIVIDE_EQUAL      : '/=';
+//MODULO_EQUAL      : '%=';
+//
+//EQUAL           : '==';
+//NOT_EQUAL       : '!=';
+//GREATER_EQUAL   : '>=';
+//LESS_EQUAL      : '<=';
+//GREATER_THAN    : '>';
+//LESS_THAN       : '<';
+//
+//LP  : '(' { opened++; } ;
+//RP  : ')' { opened--; } ;
+//LSB : '[' { opened++; } ;
+//RSB : ']' { opened--; } ;
+//LCB : '{' { opened++; } ;
+//RCB : '}' { opened--; } ;
+//COLON : ':';
+//COMMA : ',';
+//SEMICOLON : ';';
+//DOT : '.';
+//
+//// Literals
+//NUMBER
+//    : INT ('.' INT)?
+//    ;
+//
+//fragment INT : [0-9]+;
+//
+//STRING
+//    : '"' (~["\r\n])* '"'
+//    ;
+//
+//// Identifiers
+//ID
+//    : [a-zA-Z_][a-zA-Z_0-9]*
+//    ;
+//
+//// New line
+//
+//NEWLINE
+//    : '\r'? '\n' (' ' | '\t')*
+//      {
+//          String text = getText();
+//          int nlLen = text.indexOf('\n') + 1;
+//          int indent = text.length() - nlLen;
+//
+//          if (opened > 0 || indent == 0) {
+//              // Continuation line or blank line → no indent token
+//              skip();
+//          } else {
+//              // Emit NEWLINE to hidden channel
+//              emit(new CommonToken(NEWLINE, "\n"));
+//
+//              int prev = indents.isEmpty() ? 0 : indents.peekFirst();
+//
+//              if (indent > prev) {
+//                  indents.push(indent);
+//                  emit(new CommonToken(INDENT, " ".repeat(indent)));
+//              } else if (indent < prev) {
+//                  while (!indents.isEmpty() && indent < indents.peekFirst()) {
+//                      indents.pop();
+//                      emit(new CommonToken(DEDENT, ""));
+//                  }
+//              }
+//              // equal indent → nothing
+//          }
+//      }
+//      -> channel(HIDDEN)
+//    ;
+//
+//// Skipped
+//COMMENT           : '#' ~[\r\n]* -> skip;
+//MULTILINE_COMMENT : '"""' .*? '"""' -> skip;
+//MULTILINE_STRING  : '"""' .*? '"""' -> skip;
+//WS                : [ \t]+ -> skip;
+
 lexer grammar pythonLexer;
 
 tokens { INDENT, DEDENT }
+
+//@lexer::members {
+//
+//    private Token hidden(int type, String text) {
+//      CommonToken t = new CommonToken(type, text);
+//      t.setChannel(HIDDEN);
+//      return t;
+//      }
+//    private java.util.ArrayDeque<Integer> indents = new java.util.ArrayDeque<>();
+//    private java.util.LinkedList<Token> pending = new java.util.LinkedList<>();
+//    private int opened = 0;
+//
+//    @Override
+//    public Token nextToken() {
+//        // EOF handling - emit remaining dedents
+//        if (_input.LA(1) == EOF && !indents.isEmpty()) {
+//            if (pending.isEmpty()) {
+//                pending.add(hidden(NEWLINE, "\n"));
+//            }
+//            while (!indents.isEmpty()) {
+//                indents.pop();
+//                pending.add(hidden(DEDENT, ""));
+//            }
+//            pending.add(new CommonToken(EOF, "<EOF>")); // EOF stays on the default channel
+//        }
+//
+//        if (!pending.isEmpty()) {
+//            return pending.poll();
+//        }
+//
+//        return super.nextToken();
+//    }
+//}
 
 @lexer::members {
     private java.util.ArrayDeque<Integer> indents = new java.util.ArrayDeque<>();
     private java.util.LinkedList<Token> pending = new java.util.LinkedList<>();
     private int opened = 0;
 
+    private Token hidden(int type, String text) {
+        CommonToken t = new CommonToken(type, text);
+        t.setChannel(HIDDEN);
+        return t;
+    }
+
     @Override
     public Token nextToken() {
-        // EOF handling - emit remaining dedents
         if (_input.LA(1) == EOF && !indents.isEmpty()) {
             if (pending.isEmpty()) {
-                pending.add(new CommonToken(NEWLINE, "\n"));
+                pending.add(hidden(NEWLINE, "\n"));
             }
             while (!indents.isEmpty()) {
                 indents.pop();
-                pending.add(new CommonToken(DEDENT, ""));
+                pending.add(new CommonToken(DEDENT, "")); // visible: block needs this to close
             }
             pending.add(new CommonToken(EOF, "<EOF>"));
         }
@@ -28,7 +214,6 @@ tokens { INDENT, DEDENT }
         return super.nextToken();
     }
 }
-
 // Keywords
 DEF         : 'def';
 RETURN      : 'return';
@@ -110,31 +295,40 @@ ID
 // New line
 
 NEWLINE
-    : '\r'? '\n' (' ' | '\t')*
+    : ('\r'? '\n' [ \t]*)+
       {
+          // '+' collapses runs of blank lines into this single match, so
+          // indentation is measured from the LAST physical line only — a
+          // blank line in the middle of a block must never trigger a
+          // spurious DEDENT.
           String text = getText();
-          int nlLen = text.indexOf('\n') + 1;
-          int indent = text.length() - nlLen;
+          int lastNl = text.lastIndexOf('\n');
+          int indent = text.length() - (lastNl + 1);
 
-          if (opened > 0 || indent == 0) {
-              // Continuation line or blank line → no indent token
+          if (opened > 0) {
+              // Inside unclosed (), [], {} — a line break here is just
+              // whitespace, never structural.
               skip();
           } else {
-              // Emit NEWLINE to hidden channel
-              emit(new CommonToken(NEWLINE, "\n"));
+              java.util.List<Token> toEmit = new java.util.ArrayList<>();
+              toEmit.add(hidden(NEWLINE, "\n"));
 
               int prev = indents.isEmpty() ? 0 : indents.peekFirst();
 
               if (indent > prev) {
                   indents.push(indent);
-                  emit(new CommonToken(INDENT, " ".repeat(indent)));
+                  toEmit.add(new CommonToken(INDENT, " ".repeat(indent))); // visible
               } else if (indent < prev) {
                   while (!indents.isEmpty() && indent < indents.peekFirst()) {
                       indents.pop();
-                      emit(new CommonToken(DEDENT, ""));
+                      toEmit.add(new CommonToken(DEDENT, "")); // visible
                   }
               }
-              // equal indent → nothing
+              // equal indent → nothing more to add
+
+              Token first = toEmit.remove(0);
+              pending.addAll(toEmit);
+              emit(first);
           }
       }
       -> channel(HIDDEN)

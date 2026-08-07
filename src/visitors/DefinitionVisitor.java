@@ -26,7 +26,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     private Scope lastFunctionScope = null;
 
-    // Track function context for parser workaround (global statement breaks AST)
     private Stack<FunctionContext> functionStack = new Stack<>();
 
     private final List<String> errors = new ArrayList<>();
@@ -51,7 +50,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         this.labelTable = labelTable;
     }
 
-    // Check if a line falls within current function context
     private boolean isInsideCurrentFunction(int line) {
         if (functionStack.isEmpty()) return false;
         FunctionContext ctx = functionStack.peek();
@@ -113,8 +111,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                 Symbol func = symbolTable.resolve(name);
                 if (func instanceof FunctionSymbol f) return f.getType();
             } else if (call.getCallee() instanceof AttributeAccessNode attr) {
-                // heuristic: `.get(...)` on a dict-like object (request.form, request.args, etc.)
-                // returns the value type (a string for Flask form/args data) when a value is present
                 if ("get".equals(attr.getAttribute())) {
                     return Type.STRING;
                 }
@@ -158,10 +154,8 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         for (ASTNode child : node.getChildren()) {
             if (child instanceof FunctionDefNode) {
                 child.accept(this);
-                leakScope = lastFunctionScope; // statements after this point leak into it
-            } else if (leakScope != null && child.getColumn() > 0) { // <-- FIX: Add column check
-                // This node was misattached to ProgramNode by the parser bug.
-                // Re-home it inside the previous function's scope.
+                leakScope = lastFunctionScope;
+            } else if (leakScope != null && child.getColumn() > 0) {
                 Scope saved = symbolTable.getCurrentScope();
                 boolean wasInFunction = inPythonFunction;
 
@@ -175,9 +169,8 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
             } else {
                 child.accept(this);
 
-                // <-- FIX: Reset leakScope when we hit a global statement
                 if (child.getColumn() == 0) {
-                    leakScope = null; // End of leaked block
+                    leakScope = null;
                 }
             }
         }
@@ -263,7 +256,7 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
         ctx.endLine = estimateFunctionEndLine(node);
 
-        lastFunctionScope = symbolTable.getCurrentScope(); // <-- ADD THIS LINE
+        lastFunctionScope = symbolTable.getCurrentScope();
         symbolTable.exitScope();
         functionStack.pop();
 
@@ -301,17 +294,15 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(AssignmentNode node) {
-        ExpressionNode targetExpr = node.getTarget(); // Now an ExpressionNode
+        ExpressionNode targetExpr = node.getTarget();
         Type inferredType = Type.UNKNOWN;
 
         if (node.getValue() != null) {
             node.getValue().accept(this);
             inferredType = inferType(node.getValue());
         }
-        // ONLY define a new symbol in the table if the target is a simple Identifier (e.g., `x = 1`)
         if (targetExpr instanceof IdentifierNode id) {
 
-            // Workaround for parser bug: global statement breaks AST block structure
             if (!inPythonFunction && isInsideCurrentFunction(node.getLine())) {
                 Scope funcScope = functionStack.peek().scope;
                 if (funcScope.resolveLocal(id.getName()) == null) {
@@ -432,14 +423,13 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
             node.getIterable().accept(this);
         }
         if (node.getIterable() instanceof IdentifierNode iterableId &&
-                node.getVariable() instanceof IdentifierNode loopId &&
-                iterableId.getName().equals(loopId.getName())) {
+                iterableId.getName().equals(node.getVariable().getName())) {
 
             addError(
                     "Loop iterable cannot have the same name as loop variable '" +
-                            loopId.getName() + "'",
-                    loopId.getLine(),
-                    loopId.getColumn()
+                            node.getVariable().getName() + "'",
+                    node.getVariable().getLine(),
+                    node.getVariable().getColumn()
             );
         }
         if (node.getBody() != null) {
@@ -514,28 +504,22 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(CallExpressionNode node) {
-        // Visit callee and arguments normally
         node.getCallee().accept(this);
         for (ExpressionNode arg : node.getArguments()) {
             arg.accept(this);
         }
 
-        // --- NEW: TEMPLATE BRIDGE LOGIC ---
         if (node.getCallee() instanceof IdentifierNode id && id.getName().equals("render_template")) {
-            // Flask's render_template signature: render_template("file.html", var1=val1, ...)
             if (!node.getArguments().isEmpty() && node.getArguments().get(0) instanceof StringLiteralNode templateNameNode) {
 
-                // 1. Extract template name (strip quotes)
                 String templateName = templateNameNode.getValue().replace("\"", "").replace("'", "");
                 Map<String, Symbol> contextVars = new HashMap<>();
 
-                // 2. Extract keyword arguments (the context variables)
                 for (int i = 1; i < node.getArguments().size(); i++) {
                     ExpressionNode arg = node.getArguments().get(i);
                     if (arg instanceof KeywordArgumentNode kwarg) {
                         String varName = kwarg.getKey();
 
-                        // Infer the type of the value being passed
                         Type varType = inferType(kwarg.getValue());
 
                         // If it's a variable reference, try to get its exact type from the Python SymbolTable
@@ -546,7 +530,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                             }
                         }
 
-                        // Create a symbol representing this variable in the Jinja context
                         Symbol sym = new Symbol(
                                 varName,
                                 varType,
@@ -559,7 +542,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                     }
                 }
 
-                // 3. Register to the SymbolTable!
                 symbolTable.registerTemplateContext(templateName, contextVars);
             }
         }
@@ -620,6 +602,9 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(ReturnNode node) {
+        if (node.getExpression() != null) {
+            node.getExpression().accept(this);
+        }
         return null;
     }
 
@@ -748,7 +733,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
 
         symbolTable.enterScope(scopeName);
 
-        // 1. Define loop variable ONLY (this is correct semantic declaration)
         if (node.getVariable() instanceof IdentifierNode id) {
 
             Symbol loopVar = new Symbol(
@@ -769,12 +753,10 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
             }
         }
 
-        // 2. Visit iterable (DO NOT define anything inside it)
         if (node.getIterable() != null) {
             node.getIterable().accept(this);
         }
 
-        // 3. Visit loop body
         node.getBody().accept(this);
 
         symbolTable.exitScope();
@@ -904,7 +886,7 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
         return switch (name) {
             case "url_for" -> Type.STRING;
             case "get_flashed_messages" -> Type.LIST;
-            case "format" -> Type.STRING;          // covers "%.2f"|format(...)
+            case "format" -> Type.STRING;
             case "len" -> Type.INT;
             case "str" -> Type.STRING;
             default -> Type.UNKNOWN;
@@ -920,7 +902,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
                 s.getFileOrigin().equals(symbolTable.getCurrentFileOrigin());
     }
 
-    // Collects the loop-target name(s) as plain strings, unpacking tuples like `for a, b in ...`
     private void collectJinjaLoopNames(ASTNode target, List<String> out) {
         if (target instanceof IdentifierNode id) {
             out.add(id.getName());
@@ -948,8 +929,6 @@ public class DefinitionVisitor implements ASTVisitor<Void> {
     }
 
 
-    // Recursively defines loop variables from a Jinja for-loop target,
-// unpacking tuples like `for category, message in messages`
     private void defineJinjaLoopTarget(ASTNode target) {
         if (target instanceof IdentifierNode id) {
             Symbol loopVar = new Symbol(

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ product.name }}
+     - Details
+{% endblock %}
+
+{% block content %}
+    <h1>{{ product.name }}</h1>
+    <img src="{{ product.image }}" alt="{{ product.name }}" style="max-width:400px; border-radius:8px; margin-bottom:20px;" />
+    <div class="card">
+        <p>
+            <strong>Price:</strong>
+             $
+            {{ '%.2f' | format(product.price) }}
+        </p>
+        <p>
+            <strong>Description:</strong>
+            {{ product.description }}
+        </p>
+        <p>
+            <strong>ID:</strong>
+            {{ product.id }}
+        </p>
+    </div>
+    <a href="{{ url_for('products_list') }}" style="color:#007bff;">Back to Products</a>
+    <!-- Optional delete button -->
+    <form action="{{ url_for('delete_product', product_id=product.id) }}" method="POST" style="display:inline;">
+        <button type="submit" style="background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:5px; margin-left:20px;">Delete Product</button>
+    </form>
+{% endblock %}
+

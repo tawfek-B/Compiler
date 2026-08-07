@@ -7,7 +7,7 @@ public class Symbol {
     protected final SymbolKind kind;
     protected final int line;
     protected final int column;
-    public final String fileOrigin;  // NEW: which file this symbol came from
+    public final String fileOrigin;
     public SymbolOccurrences symbolOccurrences = new SymbolOccurrences();
 
     public Symbol(String name, Type type, SymbolKind kind, int line, int column, String fileOrigin) {
@@ -19,7 +19,6 @@ public class Symbol {
         this.fileOrigin = fileOrigin != null ? fileOrigin : "unknown";
     }
 
-    // Backward-compatible constructor (defaults to unknown file)
     public Symbol(String name, Type type, SymbolKind kind, int line, int column) {
         this(name, type, kind, line, column, "unknown");
     }
@@ -34,7 +33,7 @@ public class Symbol {
     public SymbolKind getKind() { return kind; }
     public int getLine() { return line; }
     public int getColumn() { return column; }
-    public String getFileOrigin() { return fileOrigin; }  // NEW
+    public String getFileOrigin() { return fileOrigin; }
 
     @Override
     public String toString() {

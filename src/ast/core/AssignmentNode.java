@@ -1,13 +1,12 @@
-package ast.core; // (or your actual package)
+package ast.core;
 
 public class AssignmentNode extends StatementNode {
 
-    // CHANGED: From IdentifierNode to ExpressionNode
     private final ExpressionNode target;
     private final ExpressionNode value;
 
     public AssignmentNode(
-            ExpressionNode target, // CHANGED parameter type
+            ExpressionNode target,
             ExpressionNode value,
             int line,
             int column
@@ -20,7 +19,6 @@ public class AssignmentNode extends StatementNode {
         add(value);
     }
 
-    // CHANGED: Return type to ExpressionNode
     public ExpressionNode getTarget() {
         return target;
     }
