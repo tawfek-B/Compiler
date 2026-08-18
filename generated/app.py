@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
-app = Flask(__name__)
+app = Flask(__name__, static_folder=".", static_url_path="")
 app.secret_key = "super_secret_key"
-products = [{"id": 1, "name": "Laptop Pro", "price": 1299.99, "description": "High-performance laptop", "image": "https://via.placeholder.com/300x200?text=Laptop"}, {"id": 2, "name": "Wireless Mouse", "price": 29.99, "description": "Ergonomic wireless mouse", "image": "https://via.placeholder.com/300x200?text=Mouse"}]
+products = [{"id": 1, "name": "Laptop Pro", "price": 1299.99, "description": "High-performance laptop", "image": "https://placehold.co/300x200?text=Laptop"}, {"id": 2, "name": "Wireless Mouse", "price": 29.99, "description": "Ergonomic wireless mouse", "image": "https://placehold.co/300x200?text=Mouse"}]
 next_id = 3
 @app.route("/")
 @app.route("/products")
@@ -41,4 +41,4 @@ def delete_product(product_id):
     return redirect(url_for("products_list"))
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=8000)

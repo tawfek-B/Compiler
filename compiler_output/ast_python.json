@@ -60,6 +60,20 @@
                 "line": 101,
                 "column": 12,
                 "children": []
+              },
+              {
+                "type": "KeywordArgumentNode",
+                "label": "KeywordArgumentNode",
+                "line": 101,
+                "column": 22,
+                "children": []
+              },
+              {
+                "type": "KeywordArgumentNode",
+                "label": "KeywordArgumentNode",
+                "line": 101,
+                "column": 41,
+                "children": []
               }
             ]
           }
@@ -215,7 +229,7 @@
                       },
                       {
                         "type": "StringLiteralNode",
-                        "label": "String: \"https://via.placeholder.com/300x200?text=Laptop\"",
+                        "label": "String: \"https://placehold.co/300x200?text=Laptop\"",
                         "line": 105,
                         "column": 105,
                         "children": []
@@ -333,7 +347,7 @@
                       },
                       {
                         "type": "StringLiteralNode",
-                        "label": "String: \"https://via.placeholder.com/300x200?text=Mouse\"",
+                        "label": "String: \"https://placehold.co/300x200?text=Mouse\"",
                         "line": 106,
                         "column": 108,
                         "children": []

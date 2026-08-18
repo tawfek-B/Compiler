@@ -33,7 +33,11 @@ body {
 .nav a {
     margin-right: 15px;
     text-decoration: none;
-    color: #007bff;
+    color: white;
+    border: solid black 2px;
+    border-radius: 5px;
+    padding:10px;
+    background: cornflowerblue;
 }
 
 .card {

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=".", static_url_path="")
 app.secret_key = "super_secret_key"  # Needed for flash messages
 
 # In-memory storage (for demo – no real database)

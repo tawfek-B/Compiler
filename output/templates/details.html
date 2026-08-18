@@ -13,7 +13,7 @@
     <p><strong>ID:</strong> {{ product.id }}</p>
 </div>
 
-<a href="{{ url_for('products_list') }}" style="color:#007bff;">Back to Products</a>
+<a href="{{ url_for('products_list') }}" style="color:white; text-decoration: none; border:none; padding:8px 16px; border-radius:5px; margin-left:20px; background:#00FFFF">Back to Products</a>
 
 <!-- Optional delete button -->
 <form action="{{ url_for('delete_product', product_id=product.id) }}" method="POST" style="display:inline;">
